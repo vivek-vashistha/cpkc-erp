@@ -192,8 +192,16 @@ Your tasks:
 4. Identify anomalies:
    - Missing any step.
    - Out-of-sequence timestamps.
-   - Timestamp vs waybill metadata mismatch.
-5. Return final JSON:
+   - CarId: If present, all events should share a single CarId. If some are missing CarId, flag “missing CarId”. If multiple CarId values occur, this is an anomaly.
+   - CSNId: If present, all events should share a single CSNId. If some are missing CSNId, flag “missing CSNId”. If multiple CSNId values occur, this is an anomaly.
+5. SUGGESTED FIXES (WHEN IDs MISMATCH)
+    - If multiple CarId or CSNId values occur, choose a suggested CarId or CSNId using this priority:
+        (a) the CarId on the earliest “Created” event if present; else
+        (b) the majority CarId or CSNId across events; else
+        (c) the CarId or CSNId from the earliest event that has a CarId or CSNId.
+    - If multiple CSNId values occur, suggest a CSNId using the same priority rule.
+    - Always ask the user to validate/confirm the suggested CarId/CSNId.
+6. Return final JSON:
 {
   "anomaly_found": true|false,
   "reasons": [...],

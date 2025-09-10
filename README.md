@@ -72,3 +72,14 @@ The agent:
 ## Example Usage
 
 The agent will automatically test with waybill `WB3005` when run directly, or you can interact with it through the LangGraph dev server interface.
+
+## Test Use Cases
+
+The following waybill IDs can be used to test different anomaly scenarios:
+
+| Waybill ID | Test Case | Description |
+|------------|-----------|-------------|
+| `WB3000` | Missing Closed Event | Tests detection of missing "Closed" event at the end of the sequence |
+| `WB3013` | No Issues | Valid sequence with no anomalies - should pass all checks |
+| `WB3005` | Sequence Error | Contains sequence errors and missing events |
+| `WB3019` | CSN ID Mismatch | Tests detection of inconsistent CSN ID values across events |
