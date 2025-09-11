@@ -25,7 +25,7 @@ pip install -r requirements.txt
 
 Or install manually:
 ```bash
-pip install langgraph langchain-core langchain-openai openai python-dotenv requests
+pip install langgraph langchain-core langchain-openai openai python-dotenv requests fastapi>=0.104.0 pydantic>=2.0.0 python-multipart>=0.0.6" uvicorn[standard]>=0.24.0
 ```
 ```bash
 pip install -U "langgraph-cli[inmem]"
@@ -60,6 +60,59 @@ python agent_waybill_agentic_loggs.py
 langgraph dev
 ```
 
+### Option 3: FastAPI Server
+```bash
+python new_waybill_api_server.py
+```
+
+The API server will start on `http://localhost:8080` with the following endpoints:
+
+- **POST** `/api/anomalies?status=NEW` - Check waybill for anomalies (requires status parameter)
+- **POST** `/check` - Simple waybill check endpoint
+- **POST** `/trace` - Full trace with all messages (useful for debugging)
+- **GET** `/health` - Health check endpoint
+
+#### API Usage Examples
+
+**Check for anomalies:**
+```bash
+curl -X POST "http://localhost:8080/api/anomalies?status=NEW" \
+  -H "Content-Type: application/json" \
+  -d '{"waybill_id": "WB3005"}'
+```
+
+**Simple check:**
+```bash
+curl -X POST "http://localhost:8080/check" \
+  -H "Content-Type: application/json" \
+  -d '{"waybill_id": "WB3005"}'
+```
+
+**Get full trace:**
+```bash
+curl -X POST "http://localhost:8080/trace" \
+  -H "Content-Type: application/json" \
+  -d '{"waybill_id": "WB3005"}'
+```
+
+**Health check:**
+```bash
+curl http://localhost:8080/health
+```
+
+#### API Response Format
+
+All endpoints return JSON responses:
+
+```json
+{
+  "waybill_id": "WB3005",
+  "result": "Agent analysis result as string"
+}
+```
+
+The `/trace` endpoint additionally includes a `messages` array with the full conversation history.
+
 ## What the Agent Does
 
 The agent:
@@ -71,7 +124,42 @@ The agent:
 
 ## Example Usage
 
-The agent will automatically test with waybill `WB3005` when run directly, or you can interact with it through the LangGraph dev server interface.
+### Direct Execution
+The agent will automatically test with waybill `WB3005` when run directly:
+```bash
+python agent_waybill_agentic_loggs.py
+```
+
+### LangGraph Dev Server
+Interact with the agent through the LangGraph dev server interface:
+```bash
+langgraph dev
+```
+
+### API Server
+Use the REST API for programmatic access:
+```bash
+# Start the server
+python new_waybill_api_server.py
+
+# Test with curl
+curl -X POST "http://localhost:8080/check" \
+  -H "Content-Type: application/json" \
+  -d '{"waybill_id": "WB3005"}'
+```
+
+### Python Client Example
+```python
+import requests
+
+# Check waybill for anomalies
+response = requests.post(
+    "http://localhost:8080/api/anomalies?status=NEW",
+    json={"waybill_id": "WB3005"}
+)
+result = response.json()
+print(f"Analysis for {result['waybill_id']}: {result['result']}")
+```
 
 ## Test Use Cases
 

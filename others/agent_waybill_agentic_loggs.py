@@ -209,95 +209,105 @@ TOOLS = {
 # }
 # """
 
+# SYSTEM = """
+# You are a logistics QA assistant. The user provides a waybill ID, either directly e.g., "WB3005" or in a sentence.
+# Your tasks:
+# 1. Extract the waybill_id (pattern: WB followed by digits).
+# 2. Call tools in order to fetch events and waybill metadata.
+# 3. Validate the event sequence follows exactly:
+#    Created → Picked Up → In Transit → At Border → Arrived → Delivered → Closed
+#    Each event must exist and occur in that chronological order.
+# 4. Identify anomalies:
+#    - Missing any step.
+#    - Out-of-sequence timestamps.
+#    - CarId: If present, all events should share a single CarId. If some are missing CarId, flag “missing CarId”. If multiple CarId values occur, this is an anomaly.
+#    - CSNId: If present, all events should share a single CSNId. If some are missing CSNId, flag “missing CSNId”. If multiple CSNId values occur, this is an anomaly.
+# 5. SUGGESTED FIXES (WHEN IDs MISMATCH)
+#     - If multiple CarId or CSNId values occur, choose a suggested CarId or CSNId using this priority:
+#         (a) the CarId on the earliest “Created” event if present; else
+#         (b) the majority CarId or CSNId across events; else
+#         (c) the CarId or CSNId from the earliest event that has a CarId or CSNId.
+#     - If multiple CSNId values occur, suggest a CSNId using the same priority rule.
+#     - Always ask the user to validate/confirm the suggested CarId/CSNId.
+# 6. Return the list of anomalies in the following JSON format:
+# [
+#   {
+#     "waybill_id":"WB3000",
+#     "car_id":"CPKC-1001",
+#     "csn_id":"CSN-CPKC-1001-202509-A",
+#     "type":"MISSING_EMPTY",
+#     "suggested_fix":{"action":"INSERT_EVENT","event_type":"empty","ts_hint":"2025-09-09T09:55:00"},
+#     "confidence":0.87,
+#     "status":"NEW"
+#   }
+# ]
+# """
 SYSTEM = """
-You are a logistics QA assistant.
-
-### TASK
-The user provides a waybill ID (e.g., “WB3005”, possibly embedded in a sentence).
-1) Extract waybill_id (regex: \bWB\d+\b).
-2) Call tools as needed to fetch events and waybill metadata.
-3) Validate the required sequence (exactly and in order):
+You are a logistics QA assistant. The user provides a waybill ID, either directly e.g., "WB3005" or in a sentence.
+Your tasks:
+1. Extract the waybill_id (pattern: WB followed by digits).
+2. Call tools in order to fetch events and waybill metadata.
+3. Validate the event sequence follows exactly:
    Created → Picked Up → In Transit → At Border → Arrived → Delivered → Closed
-4) Find anomalies:
-   - Missing any required step.
+   Each event must exist and occur in that chronological order.
+4. Identify anomalies:
+   - Missing any step.
    - Out-of-sequence timestamps.
-   - CarId rules: if present, all events must share one value. If some missing → "missing CarId". If >1 value → anomaly.
-   - CSNId rules: same as CarId.
-5) Suggest fixes when IDs mismatch using priority:
-   a) value on the earliest "Created" event (if present), else
-   b) majority value across events, else
-   c) value from the earliest event that has one.
-   Always ask user to confirm (store this as "needs_confirmation": true).
+   - CarId: If present, all events should share a single CarId. If some are missing CarId, flag “missing CarId”. If multiple CarId values occur, this is an anomaly.
+   - CSNId: If present, all events should share a single CSNId. If some are missing CSNId, flag “missing CSNId”. If multiple CSNId values occur, this is an anomaly.
+5. SUGGESTED FIXES (WHEN IDs MISMATCH)
+    - If multiple CarId or CSNId values occur, choose a suggested CarId or CSNId using this priority:
+        (a) the CarId on the earliest “Created” event if present; else
+        (b) the majority CarId or CSNId across events; else
+        (c) the CarId or CSNId from the earliest event that has a CarId or CSNId.
+    - If multiple CSNId values occur, suggest a CSNId using the same priority rule.
+    - Always ask the user to validate/confirm the suggested CarId/CSNId.
+6. Return only a JSON object with a single key anomalies whose value is the array of anomaly objects. No prose, no code fences. If none, return {"anomalies": []}.
 
-### OUTPUT CONTRACT (STRICT)
-- Return ONLY a valid JSON array (UTF-8), no markdown, no backticks, no prose.
-- Each element is an object with these keys ONLY:
-
-{
-  "waybill_id": string,                  // e.g., "WB3000"
-  "car_id": string|null,                 // chosen/suggested canonical CarId or null
-  "csn_id": string|null,                 // chosen/suggested canonical CSNId or null
-  "type": "SEQUENCE_ERROR"|"MISSING_STEP"|"CARID_INCONSISTENT"|"CARID_MISSING"|"CSNID_INCONSISTENT"|"CSNID_MISSING",
-  "details": string,                     // short machine-friendly description of the anomaly
-  "suggested_fix": {                     // required; use null if no fix
-    "action": "INSERT_EVENT"|"REORDER_EVENTS"|"SET_CARID"|"SET_CSNID"|null,
-    "event_type": "Created"|"Picked Up"|"In Transit"|"At Border"|"Arrived"|"Delivered"|"Closed"|null,
-    "ts_hint": string|null,              // ISO 8601 with Z (e.g., "2025-09-09T09:55:00Z") when relevant
-    "value": string|null                 // the value to set when action is SET_*
-  },
-  "confidence": number,                  // 0..1
-  "needs_confirmation": boolean,         // true if any suggested_* is present
-  "status": "NEW"|"UNCHANGED"            // "NEW" for new anomaly records
+"""
+ANOMALY_SCHEMA = {
+    "name": "anomaly_list",
+    "schema": {
+        "type": "object",
+        "additionalProperties": False,
+        "properties": {
+            "anomalies": {
+                "type": "array",
+                "items": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "waybill_id": {"type": "string"},
+                        "car_id": {"type": "string"},
+                        "csn_id": {"type": "string"},
+                        "type": {"type": "string"},
+                        "suggested_fix": {
+                            "type": "object",
+                            "additionalProperties": False,
+                            "properties": {
+                                "action": {"type": "string"},
+                                "event_type": {"type": "string"},
+                                "ts_hint": {"type": "string", "format": "date-time"}
+                            },
+                            "required": ["action"]
+                        },
+                        "confidence": {"type": "number"},
+                        "status": {"type": "string"}
+                    },
+                    "required": ["waybill_id", "type", "suggested_fix", "confidence", "status"]
+                }
+            }
+        },
+        "required": ["anomalies"]
+    }
 }
 
-- If there are **no anomalies**, return an **empty array**: [].
-- Use double quotes for all strings. No trailing commas. ISO 8601 timestamps must end with "Z".
-- If tool data is unavailable or parse fails, return:
-  [
-    {
-      "waybill_id": "<extracted-or-null>",
-      "car_id": null,
-      "csn_id": null,
-      "type": "SEQUENCE_ERROR",
-      "details": "Unable to validate: missing event data",
-      "suggested_fix": null,
-      "confidence": 0.0,
-      "needs_confirmation": false,
-      "status": "NEW"
-    }
-  ]
 
-### EXAMPLES
-
-// Example: CSNId inconsistent like your screenshot (earliest Created + majority = "CSN-CPKC-1001-202509-A"; one event has "CSN-CPKC-1003-202508-Z")
-[
-  {
-    "waybill_id": "WB3019",
-    "car_id": "CPKC-1001",
-    "csn_id": "CSN-CPKC-1001-202509-A",
-    "type": "CSNID_INCONSISTENT",
-    "details": "Multiple CSNId values across events; minority at 'At Border'",
-    "suggested_fix": {
-      "action": "SET_CSNID",
-      "event_type": null,
-      "ts_hint": null,
-      "value": "CSN-CPKC-1001-202509-A"
-    },
-    "confidence": 0.87,
-    "needs_confirmation": true,
-    "status": "NEW"
-  }
-]
-
-// Example: perfect sequence, everything consistent
-[]
-
-### STYLE
-- Do all reasoning internally; OUTPUT MUST BE JSON ARRAY ONLY.
-- Do not wrap in markdown backticks. Do not add explanations, headings, or bullets.
-"""
-
-llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0).bind_tools(list(TOOLS.values()))
+# llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0).bind_tools(list(TOOLS.values()))
+llm = ChatOpenAI(model=OPENAI_MODEL, 
+                temperature=0,
+                 response_format={"type": "json_schema", "json_schema": ANOMALY_SCHEMA},
+                ).bind_tools(list(TOOLS.values()))
 
 def agent_node(state: MessagesState) -> dict:
     """Agent node: the LLM decides to call a tool (or answer)."""
