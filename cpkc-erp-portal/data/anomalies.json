@@ -1,0 +1,30 @@
+[
+  {
+    "id": "anomaly_1757668073724_fbt2iqkb0",
+    "waybill_id": "WB3005",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "SEQUENCE_ERROR",
+    "confidence": 0.9,
+    "suggested_fix": "REORDER_EVENTS",
+    "status": "NEW",
+    "created_ts": "2025-09-12T09:07:53.724Z",
+    "updated_ts": "2025-09-12T09:07:53.724Z",
+    "details": "Events are out of sequence: 'In Transit' before 'Picked Up'",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757668073724_is3ea2q9k",
+    "waybill_id": "WB3005",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "MISSING_STEP",
+    "confidence": 0.8,
+    "suggested_fix": "INSERT_EVENT",
+    "status": "NEW",
+    "created_ts": "2025-09-12T09:07:53.724Z",
+    "updated_ts": "2025-09-12T09:07:53.724Z",
+    "details": "Missing 'Arrived', 'Delivered', and 'Closed' events",
+    "needs_confirmation": true
+  }
+]

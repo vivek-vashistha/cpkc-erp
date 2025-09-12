@@ -57,6 +57,7 @@ A comprehensive Enterprise Resource Planning (ERP) portal built with Next.js, Sh
    ```env
    NEXT_PUBLIC_API_URL=https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec
    NEXT_PUBLIC_API_KEY=your_api_key_here
+   NEXT_PUBLIC_AGENT_URL=http://localhost:8080
    ```
 
 4. **Run the development server**
