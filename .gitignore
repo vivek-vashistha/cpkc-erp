@@ -78,3 +78,5 @@ coverage.xml
 .pytest_cache/
 venv
 
+.next
+node_modules

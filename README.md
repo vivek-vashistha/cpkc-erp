@@ -1,10 +1,25 @@
-# Logistics Waybill QA Agent
+# CPKC ERP System
 
-A LangGraph-based agent that analyzes waybill shipments for anomalies and validates event sequences.
+A comprehensive Enterprise Resource Planning system with a LangGraph-based waybill QA agent backend and a modern Next.js frontend portal.
 
-## Setup
+## Project Structure
 
-### 1. Create and Activate Virtual Environment
+This repository contains two main components:
+
+- **Backend**: LangGraph-based agent for waybill anomaly detection (located in `backend/agent/`)
+- **Frontend**: Next.js ERP portal for CPKC operations (located in `cpkc-erp-portal/`)
+
+## Backend Setup (Waybill QA Agent)
+
+The backend agent analyzes waybill shipments for anomalies and validates event sequences.
+
+### 1. Navigate to Backend Directory
+
+```bash
+cd backend/agent
+```
+
+### 2. Create and Activate Virtual Environment
 
 ```bash
 # Create virtual environment
@@ -17,7 +32,7 @@ venv\Scripts\activate
 source venv/bin/activate
 ```
 
-### 2. Install Dependencies
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
@@ -25,15 +40,15 @@ pip install -r requirements.txt
 
 Or install manually:
 ```bash
-pip install langgraph langchain-core langchain-openai openai python-dotenv requests fastapi>=0.104.0 pydantic>=2.0.0 python-multipart>=0.0.6" uvicorn[standard]>=0.24.0
+pip install langgraph langchain-core langchain-openai openai python-dotenv requests fastapi pydantic python-multipart uvicorn[standard]
 ```
 ```bash
 pip install -U "langgraph-cli[inmem]"
 ```
 
-### 3. Environment Configuration
+### 4. Environment Configuration
 
-Create a `.env` file with the following variables:
+Create a `.env` file in the `backend/agent/` directory with the following variables:
 ```
 OPENAI_API_KEY='sk-proj-0lxv78RPiB....'
 OPENAI_MODEL = 'gpt-4o'
@@ -48,7 +63,9 @@ LANGSMITH_TRACING=true
 LANGSMITH_PROJECT=CPKC-ERP-waybill-dev
 ```
 
-## Running the Agent
+## Running the Backend Agent
+
+Make sure you're in the `backend/agent/` directory and have activated the virtual environment.
 
 ### Option 1: Direct Python Execution
 ```bash
@@ -113,7 +130,33 @@ All endpoints return JSON responses:
 
 The `/trace` endpoint additionally includes a `messages` array with the full conversation history.
 
-## What the Agent Does
+## Frontend Setup (CPKC ERP Portal)
+
+The frontend is a modern Next.js application for managing CPKC rail operations.
+
+### 1. Navigate to Frontend Directory
+
+```bash
+cd cpkc-erp-portal
+```
+
+### 2. Follow Frontend Setup Instructions
+
+Please refer to the detailed setup instructions in the frontend README file:
+
+📖 **[Frontend Setup Guide](./cpkc-erp-portal/README.md)**
+
+The frontend includes:
+- Dashboard with key metrics and activities
+- Waybill management and tracking
+- Contract management
+- Asset inventory and status tracking
+- Operations logging
+- Anomaly detection and management
+- Analytics and reporting
+- AI-powered chat support
+
+## What the Backend Agent Does
 
 The agent:
 1. Extracts waybill IDs from user input
@@ -124,21 +167,30 @@ The agent:
 
 ## Example Usage
 
-### Direct Execution
+### Backend Agent Usage
+
+Make sure you're in the `backend/agent/` directory with the virtual environment activated.
+
+#### Direct Execution
 The agent will automatically test with waybill `WB3005` when run directly:
 ```bash
+cd backend/agent
 python agent_waybill_agentic_loggs.py
 ```
 
-### LangGraph Dev Server
+#### LangGraph Dev Server
 Interact with the agent through the LangGraph dev server interface:
 ```bash
+cd backend/agent
 langgraph dev
 ```
 
-### API Server
+#### API Server
 Use the REST API for programmatic access:
 ```bash
+# Navigate to backend directory
+cd backend/agent
+
 # Start the server
 python new_waybill_api_server.py
 
@@ -147,6 +199,11 @@ curl -X POST "http://localhost:8080/check" \
   -H "Content-Type: application/json" \
   -d '{"waybill_id": "WB3005"}'
 ```
+
+### Frontend Portal Usage
+
+For the frontend portal setup and usage, please refer to the detailed instructions in:
+📖 **[Frontend Setup Guide](./cpkc-erp-portal/README.md)**
 
 ### Python Client Example
 ```python

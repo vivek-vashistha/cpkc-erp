@@ -312,8 +312,12 @@ def agent_node(state: MessagesState) -> dict:
     # invoke
     resp = llm.invoke(messages)
     # print assistant content (before tool calls)
-    if isinstance(resp, AIMessage) and resp.content:
+    if isinstance(resp, AIMessage):
         print(f"[AGENT] Assistant: {resp.content}")
+        if hasattr(resp, 'tool_calls') and resp.tool_calls:
+            print(f"[AGENT] Tool calls: {len(resp.tool_calls)}")
+        else:
+            print("[AGENT] No tool calls - final response")
 
     return {"messages": [resp]}
 
