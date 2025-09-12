@@ -9,28 +9,40 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiService, type Waybill } from '@/lib/api';
 import { formatDate, getStatusColor } from '@/lib/utils';
-import { Search, Filter, Eye, Edit, Plus, MapPin, Navigation } from 'lucide-react';
+import { Search, Filter, Eye, Edit, Plus, MapPin, Navigation, RefreshCw, Database } from 'lucide-react';
 
 export default function WaybillsPage() {
   const [waybills, setWaybills] = useState<Waybill[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [lastFetchTime, setLastFetchTime] = useState<Date | null>(null);
+  const [cacheStatus, setCacheStatus] = useState<'cached' | 'fresh' | 'unknown'>('unknown');
+
+  const fetchWaybills = async (forceRefresh = false) => {
+    try {
+      setLoading(true);
+      console.log('Fetching waybills...', forceRefresh ? '(forced refresh)' : '');
+      
+      if (forceRefresh) {
+        apiService.invalidateWaybillCache();
+      }
+      
+      const data = await apiService.getWaybills({ limit: 100 });
+      console.log('Waybills data received:', data);
+      setWaybills(data.items || []);
+      setLastFetchTime(new Date());
+      setCacheStatus(forceRefresh ? 'fresh' : 'cached');
+    } catch (error) {
+      console.error('Failed to fetch waybills:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchWaybills = async () => {
-      try {
-        console.log('Fetching waybills...');
-        const data = await apiService.getWaybills({ limit: 100 });
-        console.log('Waybills data received:', data);
-        setWaybills(data.items || []);
-      } catch (error) {
-        console.error('Failed to fetch waybills:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+    // Clean up expired cache entries on page load
+    apiService.cleanupExpiredCache();
     fetchWaybills();
   }, []);
 
@@ -95,16 +107,49 @@ export default function WaybillsPage() {
               <Filter className="h-4 w-4" />
               Filter
             </Button>
+            <Button 
+              variant="outline" 
+              className="flex items-center gap-2"
+              onClick={() => fetchWaybills(true)}
+              disabled={loading}
+            >
+              <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+              Refresh
+            </Button>
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <Database className="h-4 w-4" />
+              <span className={`px-2 py-1 rounded text-xs ${
+                cacheStatus === 'cached' ? 'bg-blue-100 text-blue-800' :
+                cacheStatus === 'fresh' ? 'bg-green-100 text-green-800' :
+                'bg-gray-100 text-gray-800'
+              }`}>
+                {cacheStatus === 'cached' ? 'Cached' : 
+                 cacheStatus === 'fresh' ? 'Fresh' : 'Unknown'}
+              </span>
+              {lastFetchTime && (
+                <span className="text-xs text-gray-500">
+                  {formatDate(lastFetchTime.toISOString())}
+                </span>
+              )}
+            </div>
           </div>
         </div>
 
         <TabsContent value="all" className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Waybill List</CardTitle>
-              <CardDescription>
-                {filteredWaybills.length} waybills found
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Waybill List</CardTitle>
+                  <CardDescription>
+                    {filteredWaybills.length} waybills found
+                  </CardDescription>
+                </div>
+                <div className="flex items-center gap-2 text-sm text-gray-600">
+                  <Database className="h-4 w-4" />
+                  <span>Cache: {apiService.getCacheInfo().size} entries</span>
+                </div>
+              </div>
             </CardHeader>
             <CardContent>
               <Table>

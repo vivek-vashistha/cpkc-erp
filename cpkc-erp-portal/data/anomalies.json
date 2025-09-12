@@ -1,5 +1,47 @@
 [
   {
+    "id": "anomaly_1757671523727_b65u5hzi9",
+    "waybill_id": "WB3019",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "CSNID_INCONSISTENT",
+    "confidence": 0.87,
+    "suggested_fix": "SET_CSNID",
+    "status": "NEW",
+    "created_ts": "2025-09-12T10:05:23.727Z",
+    "updated_ts": "2025-09-12T10:05:23.727Z",
+    "details": "Multiple CSNId values across events; minority at 'At Border'",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757671523727_3yb7acjeu",
+    "waybill_id": "WB3000",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "MISSING_STEP",
+    "confidence": 0.9,
+    "suggested_fix": "INSERT_EVENT",
+    "status": "NEW",
+    "created_ts": "2025-09-12T10:05:23.727Z",
+    "updated_ts": "2025-09-12T10:05:23.727Z",
+    "details": "Missing 'Closed' event",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757671523727_3kthr8n6t",
+    "waybill_id": "WB3010",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "MISSING_STEP",
+    "confidence": 0.8,
+    "suggested_fix": "Manual review required",
+    "status": "NEW",
+    "created_ts": "2025-09-12T10:05:23.727Z",
+    "updated_ts": "2025-09-12T10:05:23.727Z",
+    "details": "Missing 'In Transit', 'At Border', 'Arrived', 'Delivered', 'Closed' events",
+    "needs_confirmation": false
+  },
+  {
     "id": "anomaly_1757668073724_fbt2iqkb0",
     "waybill_id": "WB3005",
     "car_id": "CPKC-1001",
