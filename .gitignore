@@ -10,7 +10,7 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
+backend/agent/lib/
 lib64/
 parts/
 sdist/
@@ -20,28 +20,24 @@ wheels/
 .installed.cfg
 *.egg
 MANIFEST
-
 # Virtual Environment
 venv/
 env/
 ENV/
 env.bak/
 venv.bak/
-
 # Environment Variables
 .env
 .env.local
 .env.development.local
 .env.test.local
 .env.production.local
-
 # IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
-
 # OS
 .DS_Store
 .DS_Store?
@@ -50,24 +46,18 @@ venv.bak/
 .Trashes
 ehthumbs.db
 Thumbs.db
-
 # Logs
 *.log
 logs/
-
 # Temporary files
 *.tmp
 *.temp
-
 # Jupyter Notebook
 .ipynb_checkpoints
-
 # LangSmith
 .langsmith/
-
 # LangGraph
 .langgraph_api/
-
 # Coverage reports
 htmlcov/
 .coverage
@@ -77,7 +67,6 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 venv
-
 .next
 node_modules
 anomalies copy.json
