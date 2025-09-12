@@ -80,3 +80,4 @@ venv
 
 .next
 node_modules
+anomalies copy.json
