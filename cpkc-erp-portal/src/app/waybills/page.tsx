@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiService, type Waybill } from '@/lib/api';
 import { formatDate, getStatusColor } from '@/lib/utils';
-import { Search, Filter, Eye, Edit, Plus } from 'lucide-react';
+import { Search, Filter, Eye, Edit, Plus, MapPin, Navigation } from 'lucide-react';
 
 export default function WaybillsPage() {
   const [waybills, setWaybills] = useState<Waybill[]>([]);
@@ -20,8 +20,10 @@ export default function WaybillsPage() {
   useEffect(() => {
     const fetchWaybills = async () => {
       try {
+        console.log('Fetching waybills...');
         const data = await apiService.getWaybills({ limit: 100 });
-        setWaybills(data.items);
+        console.log('Waybills data received:', data);
+        setWaybills(data.items || []);
       } catch (error) {
         console.error('Failed to fetch waybills:', error);
       } finally {
@@ -110,7 +112,18 @@ export default function WaybillsPage() {
                   <TableRow>
                     <TableHead>Waybill ID</TableHead>
                     <TableHead>Customer</TableHead>
-                    <TableHead>Route</TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <MapPin className="h-4 w-4" />
+                        Origin
+                      </div>
+                    </TableHead>
+                    <TableHead>
+                      <div className="flex items-center gap-2">
+                        <Navigation className="h-4 w-4" />
+                        Destination
+                      </div>
+                    </TableHead>
                     <TableHead>Commodity</TableHead>
                     <TableHead>Weight</TableHead>
                     <TableHead>Status</TableHead>
@@ -119,38 +132,56 @@ export default function WaybillsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredWaybills.map((waybill) => (
-                    <TableRow key={waybill.waybill_id}>
-                      <TableCell className="font-medium">
-                        {waybill.waybill_id}
-                      </TableCell>
-                      <TableCell>{waybill.customer_id}</TableCell>
-                      <TableCell>
-                        <div className="text-sm">
-                          <div>{waybill.origin_location}</div>
-                          <div className="text-gray-500">→ {waybill.destination_location}</div>
-                        </div>
-                      </TableCell>
-                      <TableCell>{waybill.commodity}</TableCell>
-                      <TableCell>{waybill.weight_tons} tons</TableCell>
-                      <TableCell>
-                        <Badge className={getStatusColor(waybill.current_status)}>
-                          {waybill.current_status}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>{formatDate(waybill.created_ts)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button variant="ghost" size="sm">
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button variant="ghost" size="sm">
-                            <Edit className="h-4 w-4" />
-                          </Button>
-                        </div>
+                  {filteredWaybills.length > 0 ? (
+                    filteredWaybills.map((waybill) => (
+                      <TableRow key={waybill.waybill_id}>
+                        <TableCell className="font-medium">
+                          {waybill.waybill_id}
+                        </TableCell>
+                        <TableCell>{waybill.customer_id}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <MapPin className="h-3 w-3 text-blue-500" />
+                            <span className="font-medium text-blue-600">
+                              {waybill.origin_location}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Navigation className="h-3 w-3 text-green-500" />
+                            <span className="font-medium text-green-600">
+                              {waybill.destination_location}
+                            </span>
+                          </div>
+                        </TableCell>
+                        <TableCell>{waybill.commodity}</TableCell>
+                        <TableCell>{waybill.weight_tons} tons</TableCell>
+                        <TableCell>
+                          <Badge className={getStatusColor(waybill.current_status)}>
+                            {waybill.current_status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>{formatDate(waybill.created_ts)}</TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Button variant="ghost" size="sm">
+                              <Eye className="h-4 w-4" />
+                            </Button>
+                            <Button variant="ghost" size="sm">
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                        {loading ? 'Loading waybills...' : 'No waybills found'}
                       </TableCell>
                     </TableRow>
-                  ))}
+                  )}
                 </TableBody>
               </Table>
             </CardContent>
