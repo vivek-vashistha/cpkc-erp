@@ -9,7 +9,7 @@
     "suggested_fix": "REORDER_EVENTS",
     "status": "NEW",
     "created_ts": "2025-09-12T09:07:53.724Z",
-    "updated_ts": "2025-09-12T09:07:53.724Z",
+    "updated_ts": "2025-09-12T09:31:34.410Z",
     "details": "Events are out of sequence: 'In Transit' before 'Picked Up'",
     "needs_confirmation": true
   },
@@ -23,7 +23,7 @@
     "suggested_fix": "INSERT_EVENT",
     "status": "NEW",
     "created_ts": "2025-09-12T09:07:53.724Z",
-    "updated_ts": "2025-09-12T09:07:53.724Z",
+    "updated_ts": "2025-09-12T09:31:40.684Z",
     "details": "Missing 'Arrived', 'Delivered', and 'Closed' events",
     "needs_confirmation": true
   }

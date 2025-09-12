@@ -378,6 +378,7 @@ export default function AnomaliesPage() {
                     <TableHead>Type</TableHead>
                     <TableHead>Waybill</TableHead>
                     <TableHead>Car ID</TableHead>
+                    <TableHead>CSN ID</TableHead>
                     <TableHead>Details</TableHead>
                     <TableHead>Suggested Fix</TableHead>
                     <TableHead>Confidence</TableHead>
@@ -393,6 +394,11 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell className="font-medium">{anomaly.waybill_id}</TableCell>
                       <TableCell>{anomaly.car_id}</TableCell>
+                      <TableCell>
+                        <span className="text-sm font-mono text-blue-600">
+                          {anomaly.csn_id}
+                        </span>
+                      </TableCell>
                       <TableCell>
                         <div className="max-w-xs">
                           <p className="text-sm text-gray-600 truncate" title={anomaly.details}>
@@ -473,10 +479,12 @@ export default function AnomaliesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Waybill</TableHead>
                     <TableHead>Car ID</TableHead>
+                    <TableHead>CSN ID</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Suggested Fix</TableHead>
                     <TableHead>Confidence</TableHead>
                     <TableHead>Resolved</TableHead>
                     <TableHead>Actions</TableHead>
@@ -485,12 +493,28 @@ export default function AnomaliesPage() {
                 <TableBody>
                   {resolvedAnomalies.map((anomaly) => (
                     <TableRow key={anomaly.id}>
-                      <TableCell className="font-medium">{anomaly.id}</TableCell>
                       <TableCell>
                         <Badge className="bg-green-100 text-green-800">{anomaly.type}</Badge>
                       </TableCell>
-                      <TableCell>{anomaly.waybill_id}</TableCell>
+                      <TableCell className="font-medium">{anomaly.waybill_id}</TableCell>
                       <TableCell>{anomaly.car_id}</TableCell>
+                      <TableCell>
+                        <span className="text-sm font-mono text-blue-600">
+                          {anomaly.csn_id}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <p className="text-sm text-gray-600 truncate" title={anomaly.details}>
+                            {anomaly.details || 'No details available'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {anomaly.suggested_fix}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="w-16 bg-gray-200 rounded-full h-2">
@@ -504,9 +528,40 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell>{formatDate(anomaly.updated_ts)}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusUpdate(anomaly.id, 'NEW')}
+                            title="Move to New"
+                          >
+                            <AlertTriangle className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusUpdate(anomaly.id, 'IGNORED')}
+                            title="Move to Ignored"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteAnomaly(anomaly.id)}
+                            title="Delete Anomaly"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
@@ -528,10 +583,12 @@ export default function AnomaliesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>ID</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Waybill</TableHead>
                     <TableHead>Car ID</TableHead>
+                    <TableHead>CSN ID</TableHead>
+                    <TableHead>Details</TableHead>
+                    <TableHead>Suggested Fix</TableHead>
                     <TableHead>Confidence</TableHead>
                     <TableHead>Ignored</TableHead>
                     <TableHead>Actions</TableHead>
@@ -540,12 +597,28 @@ export default function AnomaliesPage() {
                 <TableBody>
                   {ignoredAnomalies.map((anomaly) => (
                     <TableRow key={anomaly.id}>
-                      <TableCell className="font-medium">{anomaly.id}</TableCell>
                       <TableCell>
                         <Badge variant="secondary">{anomaly.type}</Badge>
                       </TableCell>
-                      <TableCell>{anomaly.waybill_id}</TableCell>
+                      <TableCell className="font-medium">{anomaly.waybill_id}</TableCell>
                       <TableCell>{anomaly.car_id}</TableCell>
+                      <TableCell>
+                        <span className="text-sm font-mono text-blue-600">
+                          {anomaly.csn_id}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <div className="max-w-xs">
+                          <p className="text-sm text-gray-600 truncate" title={anomaly.details}>
+                            {anomaly.details || 'No details available'}
+                          </p>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="text-xs">
+                          {anomaly.suggested_fix}
+                        </Badge>
+                      </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <div className="w-16 bg-gray-200 rounded-full h-2">
@@ -559,9 +632,40 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell>{formatDate(anomaly.updated_ts)}</TableCell>
                       <TableCell>
-                        <Button variant="ghost" size="sm">
-                          <Eye className="h-4 w-4" />
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusUpdate(anomaly.id, 'NEW')}
+                            title="Move to New"
+                          >
+                            <AlertTriangle className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => handleStatusUpdate(anomaly.id, 'RESOLVED')}
+                            title="Move to Resolved"
+                          >
+                            <CheckCircle className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            title="View Details"
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="sm"
+                            onClick={() => handleDeleteAnomaly(anomaly.id)}
+                            title="Delete Anomaly"
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   ))}
