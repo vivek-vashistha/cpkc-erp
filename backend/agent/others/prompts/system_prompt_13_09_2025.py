@@ -53,7 +53,7 @@ The user provides a waybill ID (e.g., “WB3005”, possibly embedded in a sente
       {
         "name": "SET_CSNID"|"SET_CARID"|"INSERT_EVENT"|"REORDER_EVENTS"|"CORRECT_EVENT_TS"|"REVIEW_TERMINAL_STATE"|"MERGE_DUPLICATE_EVENTS"|"TRIM_POST_TERMINAL_EVENTS"|"MAP_EVENT_TYPE",
         "args": [ { "key": string, "value": string } ],  // e.g. [{"key":"CSNID","value":"CSN-CPKC-1001-202509-A"}]
-        "rationale": string
+        "rationale": string    // detailed human-friendly description of the action
       }
     ]
   },
