@@ -62,6 +62,28 @@ export interface Anomaly {
   updated_ts: string;
   details?: string;
   needs_confirmation?: boolean;
+  // RPA Integration fields
+  rpa_status?: 'PENDING' | 'SUBMITTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  rpa_submission_ts?: string;
+  rpa_completion_ts?: string;
+  rpa_error_message?: string;
+  rpa_workflow_id?: string;
+  rpa_retry_count?: number;
+  auto_fix_eligible?: boolean;
+  human_confirmed?: boolean;
+  rpa_actions?: RPAAction[];
+}
+
+export interface RPAAction {
+  id: string;
+  action_type: 'INSERT_EVENT' | 'REORDER_EVENTS' | 'SET_CARID' | 'SET_CSNID' | 'CORRECT_EVENT_TS' | 'REVIEW_TERMINAL_STATE';
+  event_type?: string;
+  ts_hint?: string;
+  value?: string;
+  event_ids?: string[];
+  status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED';
+  error_message?: string;
+  executed_ts?: string;
 }
 
 export interface AuditEntry {
@@ -359,6 +381,99 @@ class ApiService {
     } catch (error) {
       console.error('Failed to clear all anomalies from file:', error);
       return false;
+    }
+  }
+
+  // RPA Integration Methods
+  async submitToRPA(anomalyIds: string[], autoFix: boolean = false): Promise<{
+    success: boolean;
+    submitted_count: number;
+    workflow_ids: string[];
+    errors?: string[];
+  }> {
+    try {
+      const response = await axios.post('/api/rpa/submit', {
+        anomaly_ids: anomalyIds,
+        auto_fix: autoFix,
+        timestamp: new Date().toISOString()
+      });
+      console.log('Anomalies submitted to RPA:', response.data);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to submit anomalies to RPA:', error);
+      return {
+        success: false,
+        submitted_count: 0,
+        workflow_ids: [],
+        errors: [error instanceof Error ? error.message : 'Unknown error']
+      };
+    }
+  }
+
+  async getRPAStatus(workflowId: string): Promise<{
+    workflow_id: string;
+    status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+    progress: number;
+    current_action?: string;
+    error_message?: string;
+    completed_actions: number;
+    total_actions: number;
+    estimated_completion?: string;
+  }> {
+    try {
+      const response = await axios.get(`/api/rpa/status/${workflowId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get RPA status:', error);
+      throw error;
+    }
+  }
+
+  async cancelRPAWorkflow(workflowId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await axios.post(`/api/rpa/cancel/${workflowId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to cancel RPA workflow:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  async retryRPAWorkflow(workflowId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const response = await axios.post(`/api/rpa/retry/${workflowId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to retry RPA workflow:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  async getRPAWorkflowHistory(anomalyId: string): Promise<{
+    anomaly_id: string;
+    workflows: Array<{
+      workflow_id: string;
+      status: string;
+      submitted_ts: string;
+      completed_ts?: string;
+      actions: RPAAction[];
+    }>;
+  }> {
+    try {
+      const response = await axios.get(`/api/rpa/history/${anomalyId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to get RPA workflow history:', error);
+      return {
+        anomaly_id: anomalyId,
+        workflows: []
+      };
     }
   }
 

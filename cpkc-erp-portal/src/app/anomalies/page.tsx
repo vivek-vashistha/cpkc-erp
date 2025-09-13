@@ -8,8 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiService, type Anomaly } from '@/lib/api';
-import { formatDate, getStatusColor } from '@/lib/utils';
-import { Search, AlertTriangle, CheckCircle, XCircle, Eye, Settings, Trash2 } from 'lucide-react';
+import { formatDate, getStatusColor, isRPAEligible, getRPAEligibilityReason } from '@/lib/utils';
+import { chatContextManager } from '@/lib/chatContext';
+import { Search, AlertTriangle, CheckCircle, XCircle, Eye, Settings, Trash2, MessageCircle, Bot, Zap, RefreshCw, MoreHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
+import ChatBubble from '@/components/chat/ChatBubble';
+import { RPAStatus, RPAWorkflowDetails } from '@/components/ui/rpa-status';
 
 export default function AnomaliesPage() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -18,6 +21,15 @@ export default function AnomaliesPage() {
   const [waybillId, setWaybillId] = useState('');
   const [checkingAnomalies, setCheckingAnomalies] = useState(false);
   const [duplicateWarning, setDuplicateWarning] = useState('');
+  const [selectedAnomalies, setSelectedAnomalies] = useState<Set<string>>(new Set());
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [chatAnomalyContext, setChatAnomalyContext] = useState<Anomaly[]>([]);
+  const [rpaWorkflowDetails, setRpaWorkflowDetails] = useState<Anomaly | null>(null);
+  const [isRpaWorkflowDetailsOpen, setIsRpaWorkflowDetailsOpen] = useState(false);
+  const [submittingToRPA, setSubmittingToRPA] = useState(false);
+  const [rpaStatusUpdates, setRpaStatusUpdates] = useState<Map<string, any>>(new Map());
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [actionMenus, setActionMenus] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchAnomalies = async () => {
@@ -43,6 +55,20 @@ export default function AnomaliesPage() {
 
     fetchAnomalies();
   }, []);
+
+  // Close action menus when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (actionMenus.size > 0) {
+        setActionMenus(new Set());
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [actionMenus]);
 
   const filteredAnomalies = anomalies.filter(anomaly => 
     anomaly.waybill_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -78,11 +104,203 @@ export default function AnomaliesPage() {
           console.log('Anomaly deleted:', id);
           // Clear duplicate warning if it was related to this deletion
           setDuplicateWarning('');
+          // Remove from chat context if it exists
+          chatContextManager.removeAnomalyFromContext(id);
         }
       } catch (error) {
         console.error('Failed to delete anomaly:', error);
       }
     }
+  };
+
+  const handleChatWithAnomaly = (anomaly: Anomaly) => {
+    // Set the anomaly context and open chat bubble
+    chatContextManager.setAnomalyContext([anomaly]);
+    setChatAnomalyContext([anomaly]);
+    setIsChatOpen(true);
+  };
+
+  const handleChatWithSelectedAnomalies = (anomalies: Anomaly[]) => {
+    // Set the anomaly context and open chat bubble
+    chatContextManager.setAnomalyContext(anomalies);
+    setChatAnomalyContext(anomalies);
+    setIsChatOpen(true);
+  };
+
+  const handleSelectAnomaly = (anomalyId: string) => {
+    setSelectedAnomalies(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(anomalyId)) {
+        newSet.delete(anomalyId);
+      } else {
+        newSet.add(anomalyId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleSelectAllAnomalies = (anomalies: Anomaly[]) => {
+    const allSelected = anomalies.every(anomaly => selectedAnomalies.has(anomaly.id));
+    if (allSelected) {
+      setSelectedAnomalies(new Set());
+    } else {
+      setSelectedAnomalies(new Set(anomalies.map(anomaly => anomaly.id)));
+    }
+  };
+
+  const handleBulkChat = () => {
+    const selectedAnomalyObjects = anomalies.filter(anomaly => selectedAnomalies.has(anomaly.id));
+    if (selectedAnomalyObjects.length > 0) {
+      handleChatWithSelectedAnomalies(selectedAnomalyObjects);
+    }
+  };
+
+  const handleChatClose = () => {
+    setIsChatOpen(false);
+    setChatAnomalyContext([]);
+  };
+
+  const handleContextChange = (anomalies: Anomaly[]) => {
+    setChatAnomalyContext(anomalies);
+  };
+
+  const handleSubmitToRPA = async (anomalyIds: string[], autoFix: boolean = false) => {
+    setSubmittingToRPA(true);
+    try {
+      const result = await apiService.submitToRPA(anomalyIds, autoFix);
+      if (result.success) {
+        // Update anomalies with RPA status
+        const updatedAnomalies = anomalies.map(anomaly => {
+          if (anomalyIds.includes(anomaly.id)) {
+            return {
+              ...anomaly,
+              rpa_status: 'SUBMITTED' as const,
+              rpa_submission_ts: new Date().toISOString(),
+              auto_fix_eligible: autoFix,
+              human_confirmed: !autoFix
+            };
+          }
+          return anomaly;
+        });
+        setAnomalies(updatedAnomalies);
+        await apiService.saveAnomaliesToFile(updatedAnomalies);
+        
+        alert(`Successfully submitted ${result.submitted_count} anomalies to RPA`);
+      } else {
+        alert(`Failed to submit anomalies: ${result.errors?.join(', ')}`);
+      }
+    } catch (error) {
+      console.error('Failed to submit to RPA:', error);
+      alert('Failed to submit anomalies to RPA');
+    } finally {
+      setSubmittingToRPA(false);
+    }
+  };
+
+  const handleRpaRetry = async (workflowId: string) => {
+    try {
+      const result = await apiService.retryRPAWorkflow(workflowId);
+      if (result.success) {
+        alert('RPA workflow retry initiated');
+        // Refresh the anomaly data
+        const updatedAnomalies = await apiService.loadAnomaliesFromFile();
+        setAnomalies(updatedAnomalies);
+      } else {
+        alert(`Failed to retry RPA workflow: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Failed to retry RPA workflow:', error);
+      alert('Failed to retry RPA workflow');
+    }
+  };
+
+  const handleRpaCancel = async (workflowId: string) => {
+    try {
+      const result = await apiService.cancelRPAWorkflow(workflowId);
+      if (result.success) {
+        alert('RPA workflow cancelled');
+        // Refresh the anomaly data
+        const updatedAnomalies = await apiService.loadAnomaliesFromFile();
+        setAnomalies(updatedAnomalies);
+      } else {
+        alert(`Failed to cancel RPA workflow: ${result.message}`);
+      }
+    } catch (error) {
+      console.error('Failed to cancel RPA workflow:', error);
+      alert('Failed to cancel RPA workflow');
+    }
+  };
+
+  const handleViewRpaDetails = (anomaly: Anomaly) => {
+    setRpaWorkflowDetails(anomaly);
+    setIsRpaWorkflowDetailsOpen(true);
+  };
+
+  const handleBulkRpaSubmit = async (autoFix: boolean = false) => {
+    const selectedAnomalyObjects = anomalies.filter(anomaly => selectedAnomalies.has(anomaly.id));
+    const eligibleAnomalies = selectedAnomalyObjects.filter(anomaly => 
+      !anomaly.rpa_status && (autoFix ? isRPAEligible(anomaly) : true)
+    );
+    
+    if (eligibleAnomalies.length === 0) {
+      alert('No eligible anomalies selected for RPA submission');
+      return;
+    }
+
+    const anomalyIds = eligibleAnomalies.map(anomaly => anomaly.id);
+    await handleSubmitToRPA(anomalyIds, autoFix);
+  };
+
+  const toggleRowExpansion = (anomalyId: string) => {
+    setExpandedRows(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(anomalyId)) {
+        newSet.delete(anomalyId);
+      } else {
+        newSet.add(anomalyId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleActionMenu = (anomalyId: string) => {
+    setActionMenus(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(anomalyId)) {
+        newSet.delete(anomalyId);
+      } else {
+        newSet.add(anomalyId);
+      }
+      return newSet;
+    });
+  };
+
+  const handleQuickAction = (anomalyId: string, action: string) => {
+    const anomaly = anomalies.find(a => a.id === anomalyId);
+    if (!anomaly) return;
+
+    switch (action) {
+      case 'resolve':
+        handleStatusUpdate(anomalyId, 'RESOLVED');
+        break;
+      case 'ignore':
+        handleStatusUpdate(anomalyId, 'IGNORED');
+        break;
+      case 'chat':
+        handleChatWithAnomaly(anomaly);
+        break;
+      case 'delete':
+        handleDeleteAnomaly(anomalyId);
+        break;
+      case 'rpa':
+        handleViewRpaDetails(anomaly);
+        break;
+    }
+    setActionMenus(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(anomalyId);
+      return newSet;
+    });
   };
 
   const checkForDuplicates = (inputValue: string) => {
@@ -241,9 +459,40 @@ export default function AnomaliesPage() {
               <Trash2 className="h-4 w-4" />
               Clear All
             </Button>
-            <Button className="flex items-center gap-2">
-              <Settings className="h-4 w-4" />
-              Auto-Fix
+            <Button 
+              className="flex items-center gap-2"
+              onClick={handleBulkChat}
+              disabled={selectedAnomalies.size === 0}
+              variant={selectedAnomalies.size > 0 ? "default" : "outline"}
+            >
+              <MessageCircle className="h-4 w-4" />
+              Chat Selected ({selectedAnomalies.size})
+            </Button>
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => handleBulkRpaSubmit(true)}
+              disabled={selectedAnomalies.size === 0 || submittingToRPA}
+              variant={selectedAnomalies.size > 0 ? "default" : "outline"}
+            >
+              {submittingToRPA ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Zap className="h-4 w-4" />
+              )}
+              Auto-Fix ({selectedAnomalies.size})
+            </Button>
+            <Button 
+              className="flex items-center gap-2"
+              onClick={() => handleBulkRpaSubmit(false)}
+              disabled={selectedAnomalies.size === 0 || submittingToRPA}
+              variant="outline"
+            >
+              {submittingToRPA ? (
+                <RefreshCw className="h-4 w-4 animate-spin" />
+              ) : (
+                <Bot className="h-4 w-4" />
+              )}
+              Submit to RPA ({selectedAnomalies.size})
             </Button>
           </div>
         </div>
@@ -375,91 +624,168 @@ export default function AnomaliesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Waybill</TableHead>
-                    <TableHead>Car ID</TableHead>
-                    <TableHead>CSN ID</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead>Suggested Fix</TableHead>
-                    <TableHead>Confidence</TableHead>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={newAnomalies.length > 0 && newAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
+                        onChange={() => handleSelectAllAnomalies(newAnomalies)}
+                        className="rounded"
+                      />
+                    </TableHead>
+                    <TableHead>Anomaly</TableHead>
+                    <TableHead>Fix & Confidence</TableHead>
+                    <TableHead>RPA Status</TableHead>
                     <TableHead>Created</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-12">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {newAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id}>
-                      <TableCell>
-                        <Badge variant="destructive">{anomaly.type}</Badge>
-                      </TableCell>
-                      <TableCell className="font-medium">{anomaly.waybill_id}</TableCell>
-                      <TableCell>{anomaly.car_id}</TableCell>
-                      <TableCell>
-                        <span className="text-sm font-mono text-blue-600">
-                          {anomaly.csn_id}
-                        </span>
-                      </TableCell>
-                      <TableCell>
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-600 truncate" title={anomaly.details}>
-                            {anomaly.details || 'No details available'}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {anomaly.suggested_fix}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-red-500 h-2 rounded-full" 
-                              style={{ width: `${anomaly.confidence * 100}%` }}
-                            ></div>
+                    <>
+                      <TableRow key={anomaly.id} className="hover:bg-gray-50">
+                        <TableCell>
+                          <input
+                            type="checkbox"
+                            checked={selectedAnomalies.has(anomaly.id)}
+                            onChange={() => handleSelectAnomaly(anomaly.id)}
+                            className="rounded"
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <Badge variant="destructive" className="text-xs">
+                                {anomaly.type}
+                              </Badge>
+                              <span className="font-medium text-sm">{anomaly.waybill_id}</span>
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {anomaly.details || 'No details available'}
+                            </div>
+                            <div className="flex items-center gap-2 text-xs text-gray-500">
+                              <span>Car: {anomaly.car_id}</span>
+                              <span>•</span>
+                              <span className="font-mono">CSN: {anomaly.csn_id}</span>
+                            </div>
                           </div>
-                          <span className="text-sm">{(anomaly.confidence * 100).toFixed(0)}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDate(anomaly.created_ts)}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusUpdate(anomaly.id, 'RESOLVED')}
-                            title="Mark as Resolved"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusUpdate(anomaly.id, 'IGNORED')}
-                            title="Mark as Ignored"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteAnomaly(anomaly.id)}
-                            title="Delete Anomaly"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-2">
+                            <Badge variant="outline" className="text-xs">
+                              {anomaly.suggested_fix}
+                            </Badge>
+                            <div className="flex items-center gap-2">
+                              <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                                <div 
+                                  className="bg-red-500 h-1.5 rounded-full" 
+                                  style={{ width: `${anomaly.confidence * 100}%` }}
+                                ></div>
+                              </div>
+                              <span className="text-xs text-gray-600">
+                                {(anomaly.confidence * 100).toFixed(0)}%
+                              </span>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <RPAStatus 
+                            anomaly={anomaly}
+                            onRetry={handleRpaRetry}
+                            onCancel={handleRpaCancel}
+                            onViewDetails={handleViewRpaDetails}
+                          />
+                        </TableCell>
+                        <TableCell>
+                          <span className="text-sm text-gray-600">
+                            {formatDate(anomaly.created_ts)}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleActionMenu(anomaly.id)}
+                              className="h-8 w-8 p-0"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            {actionMenus.has(anomaly.id) && (
+                              <div className="absolute right-0 mt-8 w-48 bg-white rounded-md shadow-lg z-10 border">
+                                <div className="py-1">
+                                  <button
+                                    onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                  >
+                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                    Mark as Resolved
+                                  </button>
+                                  <button
+                                    onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                  >
+                                    <XCircle className="h-4 w-4 text-gray-600" />
+                                    Mark as Ignored
+                                  </button>
+                                  <button
+                                    onClick={() => handleQuickAction(anomaly.id, 'chat')}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                  >
+                                    <MessageCircle className="h-4 w-4 text-blue-600" />
+                                    Chat about this
+                                  </button>
+                                  <button
+                                    onClick={() => handleQuickAction(anomaly.id, 'rpa')}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                  >
+                                    <Bot className="h-4 w-4 text-purple-600" />
+                                    RPA Details
+                                  </button>
+                                  <button
+                                    onClick={() => handleQuickAction(anomaly.id, 'delete')}
+                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                  >
+                                    <Trash2 className="h-4 w-4" />
+                                    Delete
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                      {expandedRows.has(anomaly.id) && (
+                        <TableRow>
+                          <TableCell colSpan={6} className="bg-gray-50 p-4">
+                            <div className="space-y-3">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <h4 className="font-medium text-sm text-gray-900 mb-2">Anomaly Details</h4>
+                                  <div className="space-y-1 text-sm">
+                                    <div><span className="font-medium">Type:</span> {anomaly.type}</div>
+                                    <div><span className="font-medium">Waybill ID:</span> {anomaly.waybill_id}</div>
+                                    <div><span className="font-medium">Car ID:</span> {anomaly.car_id}</div>
+                                    <div><span className="font-medium">CSN ID:</span> {anomaly.csn_id}</div>
+                                  </div>
+                                </div>
+                                <div>
+                                  <h4 className="font-medium text-sm text-gray-900 mb-2">Suggested Fix</h4>
+                                  <div className="space-y-1 text-sm">
+                                    <div><span className="font-medium">Action:</span> {anomaly.suggested_fix}</div>
+                                    <div><span className="font-medium">Confidence:</span> {(anomaly.confidence * 100).toFixed(0)}%</div>
+                                    <div><span className="font-medium">Needs Confirmation:</span> {anomaly.needs_confirmation ? 'Yes' : 'No'}</div>
+                                  </div>
+                                </div>
+                              </div>
+                              <div className="pt-2 border-t">
+                                <h4 className="font-medium text-sm text-gray-900 mb-2">Description</h4>
+                                <p className="text-sm text-gray-600">{anomaly.details || 'No additional details available'}</p>
+                              </div>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </>
                   ))}
                 </TableBody>
               </Table>
@@ -479,88 +805,132 @@ export default function AnomaliesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Waybill</TableHead>
-                    <TableHead>Car ID</TableHead>
-                    <TableHead>CSN ID</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead>Suggested Fix</TableHead>
-                    <TableHead>Confidence</TableHead>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={resolvedAnomalies.length > 0 && resolvedAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
+                        onChange={() => handleSelectAllAnomalies(resolvedAnomalies)}
+                        className="rounded"
+                      />
+                    </TableHead>
+                    <TableHead>Anomaly</TableHead>
+                    <TableHead>Fix & Confidence</TableHead>
+                    <TableHead>RPA Status</TableHead>
                     <TableHead>Resolved</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-12">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {resolvedAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id}>
+                    <TableRow key={anomaly.id} className="hover:bg-gray-50">
                       <TableCell>
-                        <Badge className="bg-green-100 text-green-800">{anomaly.type}</Badge>
+                        <input
+                          type="checkbox"
+                          checked={selectedAnomalies.has(anomaly.id)}
+                          onChange={() => handleSelectAnomaly(anomaly.id)}
+                          className="rounded"
+                        />
                       </TableCell>
-                      <TableCell className="font-medium">{anomaly.waybill_id}</TableCell>
-                      <TableCell>{anomaly.car_id}</TableCell>
                       <TableCell>
-                        <span className="text-sm font-mono text-blue-600">
-                          {anomaly.csn_id}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge className="bg-green-100 text-green-800 text-xs">
+                              {anomaly.type}
+                            </Badge>
+                            <span className="font-medium text-sm">{anomaly.waybill_id}</span>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {anomaly.details || 'No details available'}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>Car: {anomaly.car_id}</span>
+                            <span>•</span>
+                            <span className="font-mono">CSN: {anomaly.csn_id}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <Badge variant="outline" className="text-xs">
+                            {anomaly.suggested_fix}
+                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-green-500 h-1.5 rounded-full" 
+                                style={{ width: `${anomaly.confidence * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-600">
+                              {(anomaly.confidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <RPAStatus 
+                          anomaly={anomaly}
+                          onRetry={handleRpaRetry}
+                          onCancel={handleRpaCancel}
+                          onViewDetails={handleViewRpaDetails}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {formatDate(anomaly.updated_ts)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-600 truncate" title={anomaly.details}>
-                            {anomaly.details || 'No details available'}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {anomaly.suggested_fix}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-green-500 h-2 rounded-full" 
-                              style={{ width: `${anomaly.confidence * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm">{(anomaly.confidence * 100).toFixed(0)}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDate(anomaly.updated_ts)}</TableCell>
-                      <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="ghost"
                             size="sm"
-                            onClick={() => handleStatusUpdate(anomaly.id, 'NEW')}
-                            title="Move to New"
+                            onClick={() => toggleActionMenu(anomaly.id)}
+                            className="h-8 w-8 p-0"
                           >
-                            <AlertTriangle className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusUpdate(anomaly.id, 'IGNORED')}
-                            title="Move to Ignored"
-                          >
-                            <XCircle className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteAnomaly(anomaly.id)}
-                            title="Delete Anomaly"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {actionMenus.has(anomaly.id) && (
+                            <div className="absolute right-0 mt-8 w-48 bg-white rounded-md shadow-lg z-10 border">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                  Move to New
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <XCircle className="h-4 w-4 text-gray-600" />
+                                  Move to Ignored
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'chat')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <MessageCircle className="h-4 w-4 text-blue-600" />
+                                  Chat about this
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'rpa')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <Bot className="h-4 w-4 text-purple-600" />
+                                  RPA Details
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'delete')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -583,88 +953,132 @@ export default function AnomaliesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Waybill</TableHead>
-                    <TableHead>Car ID</TableHead>
-                    <TableHead>CSN ID</TableHead>
-                    <TableHead>Details</TableHead>
-                    <TableHead>Suggested Fix</TableHead>
-                    <TableHead>Confidence</TableHead>
+                    <TableHead className="w-12">
+                      <input
+                        type="checkbox"
+                        checked={ignoredAnomalies.length > 0 && ignoredAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
+                        onChange={() => handleSelectAllAnomalies(ignoredAnomalies)}
+                        className="rounded"
+                      />
+                    </TableHead>
+                    <TableHead>Anomaly</TableHead>
+                    <TableHead>Fix & Confidence</TableHead>
+                    <TableHead>RPA Status</TableHead>
                     <TableHead>Ignored</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-12">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {ignoredAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id}>
+                    <TableRow key={anomaly.id} className="hover:bg-gray-50">
                       <TableCell>
-                        <Badge variant="secondary">{anomaly.type}</Badge>
+                        <input
+                          type="checkbox"
+                          checked={selectedAnomalies.has(anomaly.id)}
+                          onChange={() => handleSelectAnomaly(anomaly.id)}
+                          className="rounded"
+                        />
                       </TableCell>
-                      <TableCell className="font-medium">{anomaly.waybill_id}</TableCell>
-                      <TableCell>{anomaly.car_id}</TableCell>
                       <TableCell>
-                        <span className="text-sm font-mono text-blue-600">
-                          {anomaly.csn_id}
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="text-xs">
+                              {anomaly.type}
+                            </Badge>
+                            <span className="font-medium text-sm">{anomaly.waybill_id}</span>
+                          </div>
+                          <div className="text-xs text-gray-600">
+                            {anomaly.details || 'No details available'}
+                          </div>
+                          <div className="flex items-center gap-2 text-xs text-gray-500">
+                            <span>Car: {anomaly.car_id}</span>
+                            <span>•</span>
+                            <span className="font-mono">CSN: {anomaly.csn_id}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="space-y-2">
+                          <Badge variant="outline" className="text-xs">
+                            {anomaly.suggested_fix}
+                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <div className="w-16 bg-gray-200 rounded-full h-1.5">
+                              <div 
+                                className="bg-gray-500 h-1.5 rounded-full" 
+                                style={{ width: `${anomaly.confidence * 100}%` }}
+                              ></div>
+                            </div>
+                            <span className="text-xs text-gray-600">
+                              {(anomaly.confidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <RPAStatus 
+                          anomaly={anomaly}
+                          onRetry={handleRpaRetry}
+                          onCancel={handleRpaCancel}
+                          onViewDetails={handleViewRpaDetails}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <span className="text-sm text-gray-600">
+                          {formatDate(anomaly.updated_ts)}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="max-w-xs">
-                          <p className="text-sm text-gray-600 truncate" title={anomaly.details}>
-                            {anomaly.details || 'No details available'}
-                          </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="text-xs">
-                          {anomaly.suggested_fix}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <div className="w-16 bg-gray-200 rounded-full h-2">
-                            <div 
-                              className="bg-gray-500 h-2 rounded-full" 
-                              style={{ width: `${anomaly.confidence * 100}%` }}
-                            ></div>
-                          </div>
-                          <span className="text-sm">{(anomaly.confidence * 100).toFixed(0)}%</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>{formatDate(anomaly.updated_ts)}</TableCell>
-                      <TableCell>
                         <div className="flex items-center gap-1">
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="ghost"
                             size="sm"
-                            onClick={() => handleStatusUpdate(anomaly.id, 'NEW')}
-                            title="Move to New"
+                            onClick={() => toggleActionMenu(anomaly.id)}
+                            className="h-8 w-8 p-0"
                           >
-                            <AlertTriangle className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4" />
                           </Button>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleStatusUpdate(anomaly.id, 'RESOLVED')}
-                            title="Move to Resolved"
-                          >
-                            <CheckCircle className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            title="View Details"
-                          >
-                            <Eye className="h-4 w-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteAnomaly(anomaly.id)}
-                            title="Delete Anomaly"
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
+                          {actionMenus.has(anomaly.id) && (
+                            <div className="absolute right-0 mt-8 w-48 bg-white rounded-md shadow-lg z-10 border">
+                              <div className="py-1">
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <AlertTriangle className="h-4 w-4 text-orange-600" />
+                                  Move to New
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <CheckCircle className="h-4 w-4 text-green-600" />
+                                  Move to Resolved
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'chat')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <MessageCircle className="h-4 w-4 text-blue-600" />
+                                  Chat about this
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'rpa')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                >
+                                  <Bot className="h-4 w-4 text-purple-600" />
+                                  RPA Details
+                                </button>
+                                <button
+                                  onClick={() => handleQuickAction(anomaly.id, 'delete')}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
@@ -675,6 +1089,37 @@ export default function AnomaliesPage() {
           </Card>
         </TabsContent>
       </Tabs>
+
+      {/* Floating Chat Button */}
+      {!isChatOpen && (
+        <Button
+          onClick={() => setIsChatOpen(true)}
+          className="fixed bottom-4 right-4 z-40 rounded-full w-14 h-14 shadow-lg hover:shadow-xl transition-all duration-300"
+          size="icon"
+        >
+          <MessageCircle className="h-6 w-6" />
+        </Button>
+      )}
+
+      {/* Chat Bubble */}
+      <ChatBubble
+        isOpen={isChatOpen}
+        onClose={handleChatClose}
+        anomalyContext={chatAnomalyContext}
+        onContextChange={handleContextChange}
+      />
+
+      {/* RPA Workflow Details Modal */}
+      {rpaWorkflowDetails && (
+        <RPAWorkflowDetails
+          anomaly={rpaWorkflowDetails}
+          isOpen={isRpaWorkflowDetailsOpen}
+          onClose={() => {
+            setIsRpaWorkflowDetailsOpen(false);
+            setRpaWorkflowDetails(null);
+          }}
+        />
+      )}
     </div>
   );
 }

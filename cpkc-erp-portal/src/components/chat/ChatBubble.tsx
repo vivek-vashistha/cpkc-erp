@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Send, Bot, User, Loader2, AlertTriangle, X } from 'lucide-react';
+import { Send, Bot, User, Loader2, AlertTriangle, X, Minimize2, Maximize2 } from 'lucide-react';
 import { chatContextManager } from '@/lib/chatContext';
 import { Anomaly } from '@/lib/api';
 
@@ -17,19 +17,18 @@ interface Message {
   type?: 'text' | 'suggestion' | 'error';
 }
 
-export default function ChatPage() {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      content: 'Hello! I\'m your CPKC ERP assistant. How can I help you today?',
-      sender: 'bot',
-      timestamp: new Date(),
-      type: 'text'
-    }
-  ]);
+interface ChatBubbleProps {
+  isOpen: boolean;
+  onClose: () => void;
+  anomalyContext: Anomaly[];
+  onContextChange: (anomalies: Anomaly[]) => void;
+}
+
+export default function ChatBubble({ isOpen, onClose, anomalyContext, onContextChange }: ChatBubbleProps) {
+  const [messages, setMessages] = useState<Message[]>([]);
   const [inputValue, setInputValue] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [anomalyContext, setAnomalyContext] = useState<Anomaly[]>([]);
+  const [isMinimized, setIsMinimized] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -41,23 +40,30 @@ export default function ChatPage() {
   }, [messages]);
 
   useEffect(() => {
-    // Load anomaly context on component mount
-    const context = chatContextManager.getCurrentContext();
-    if (context && context.contextType === 'anomalies') {
-      setAnomalyContext(context.anomalies);
-      
-      // Add a context message to the chat
+    if (isOpen && anomalyContext.length > 0) {
+      // Initialize chat with context message
       const contextMessage: Message = {
         id: `context_${Date.now()}`,
-        content: `I have ${context.anomalies.length} anomaly(ies) in context. ${chatContextManager.getContextSummary()}`,
+        content: `I have ${anomalyContext.length} anomaly(ies) in context. ${chatContextManager.getContextSummary()}`,
         sender: 'bot',
         timestamp: new Date(),
         type: 'text'
       };
       
-      setMessages(prev => [...prev, contextMessage]);
+      setMessages([contextMessage]);
+    } else if (isOpen && anomalyContext.length === 0) {
+      // Initialize with welcome message
+      const welcomeMessage: Message = {
+        id: `welcome_${Date.now()}`,
+        content: 'Hello! I\'m your CPKC ERP assistant. How can I help you today?',
+        sender: 'bot',
+        timestamp: new Date(),
+        type: 'text'
+      };
+      
+      setMessages([welcomeMessage]);
     }
-  }, []);
+  }, [isOpen, anomalyContext]);
 
   const handleSendMessage = async () => {
     if (!inputValue.trim() || isLoading) return;
@@ -140,6 +146,22 @@ export default function ChatPage() {
     return 'I understand you\'re looking for help. I can assist you with waybill management, contract information, asset tracking, operations, and anomaly resolution. Could you be more specific about what you need help with?';
   };
 
+  const clearAnomalyContext = () => {
+    chatContextManager.clearContext();
+    onContextChange([]);
+    
+    // Add a message about context being cleared
+    const clearMessage: Message = {
+      id: `clear_${Date.now()}`,
+      content: 'Anomaly context has been cleared. I\'m now ready to help with general ERP questions.',
+      sender: 'bot',
+      timestamp: new Date(),
+      type: 'text'
+    };
+    
+    setMessages(prev => [...prev, clearMessage]);
+  };
+
   const quickActions = anomalyContext.length > 0 ? [
     { label: 'Anomaly Details', action: 'Show me detailed information about these anomalies' },
     { label: 'Suggested Fixes', action: 'What are the suggested fixes for these anomalies?' },
@@ -157,96 +179,95 @@ export default function ChatPage() {
     setInputValue(action);
   };
 
-  const clearAnomalyContext = () => {
-    chatContextManager.clearContext();
-    setAnomalyContext([]);
-    
-    // Add a message about context being cleared
-    const clearMessage: Message = {
-      id: `clear_${Date.now()}`,
-      content: 'Anomaly context has been cleared. I\'m now ready to help with general ERP questions.',
-      sender: 'bot',
-      timestamp: new Date(),
-      type: 'text'
-    };
-    
-    setMessages(prev => [...prev, clearMessage]);
-  };
+  if (!isOpen) return null;
 
   return (
-    <div className="p-6 max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Chat Support</h1>
-        <p className="text-gray-600 mt-2">Get help with your ERP operations</p>
-      </div>
-
-      {/* Anomaly Context Display */}
-      {anomalyContext.length > 0 && (
-        <Card className="mb-6 border-blue-200 bg-blue-50">
-          <CardHeader className="pb-3">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg flex items-center gap-2">
-                <AlertTriangle className="h-5 w-5 text-blue-600" />
-                Anomaly Context ({anomalyContext.length} anomaly{anomalyContext.length !== 1 ? 'ies' : ''})
-              </CardTitle>
+    <div className="fixed bottom-4 right-4 z-50">
+      <Card className={`w-96 shadow-2xl border-2 transition-all duration-300 ${
+        isMinimized ? 'h-16' : 'h-[500px]'
+      }`}>
+        <CardHeader className="pb-3 border-b">
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Bot className="h-5 w-5" />
+              CPKC Assistant
+              {anomalyContext.length > 0 && (
+                <Badge variant="secondary" className="text-xs">
+                  {anomalyContext.length} anomaly{anomalyContext.length !== 1 ? 'ies' : ''}
+                </Badge>
+              )}
+            </CardTitle>
+            <div className="flex items-center gap-1">
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={clearAnomalyContext}
-                className="text-blue-600 hover:text-blue-700"
+                onClick={() => setIsMinimized(!isMinimized)}
+                className="h-6 w-6 p-0"
               >
-                <X className="h-4 w-4" />
-                Clear Context
+                {isMinimized ? <Maximize2 className="h-3 w-3" /> : <Minimize2 className="h-3 w-3" />}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onClose}
+                className="h-6 w-6 p-0"
+              >
+                <X className="h-3 w-3" />
               </Button>
             </div>
-          </CardHeader>
-          <CardContent className="pt-0">
-            <div className="space-y-2">
-              {anomalyContext.map((anomaly) => (
-                <div key={anomaly.id} className="flex items-center justify-between p-2 bg-white rounded border">
-                  <div className="flex items-center gap-3">
-                    <Badge variant="destructive" className="text-xs">
-                      {anomaly.type}
-                    </Badge>
-                    <span className="font-medium text-sm">{anomaly.waybill_id}</span>
-                    <span className="text-sm text-gray-600">Car: {anomaly.car_id}</span>
-                    <Badge variant="outline" className="text-xs">
-                      {anomaly.status}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-gray-500">
-                    {(anomaly.confidence * 100).toFixed(0)}% confidence
-                  </div>
-                </div>
-              ))}
-            </div>
-            <p className="text-sm text-blue-700 mt-3">
-              💡 Ask me about these anomalies, their fixes, confidence levels, or status. I can provide detailed analysis and recommendations.
-            </p>
-          </CardContent>
-        </Card>
-      )}
+          </div>
+        </CardHeader>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Chat Interface */}
-        <div className="lg:col-span-3">
-          <Card className="h-[600px] flex flex-col">
-            <CardHeader className="border-b">
-              <CardTitle className="flex items-center gap-2">
-                <Bot className="h-5 w-5" />
-                CPKC ERP Assistant
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 flex flex-col p-0">
+        {!isMinimized && (
+          <>
+            {/* Anomaly Context Display */}
+            {anomalyContext.length > 0 && (
+              <div className="p-3 border-b bg-blue-50">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <AlertTriangle className="h-4 w-4 text-blue-600" />
+                    <span className="text-sm font-medium text-blue-800">
+                      Context ({anomalyContext.length} anomaly{anomalyContext.length !== 1 ? 'ies' : ''})
+                    </span>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={clearAnomalyContext}
+                    className="h-6 text-blue-600 hover:text-blue-700"
+                  >
+                    <X className="h-3 w-3" />
+                  </Button>
+                </div>
+                <div className="space-y-1 max-h-20 overflow-y-auto">
+                  {anomalyContext.map((anomaly) => (
+                    <div key={anomaly.id} className="flex items-center justify-between p-1 bg-white rounded text-xs">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="destructive" className="text-xs px-1 py-0">
+                          {anomaly.type}
+                        </Badge>
+                        <span className="font-medium">{anomaly.waybill_id}</span>
+                        <span className="text-gray-500">Car: {anomaly.car_id}</span>
+                      </div>
+                      <Badge variant="outline" className="text-xs px-1 py-0">
+                        {anomaly.status}
+                      </Badge>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <CardContent className="flex-1 flex flex-col p-0 h-[350px]">
               {/* Messages */}
-              <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex-1 overflow-y-auto p-3 space-y-3">
                 {messages.map((message) => (
                   <div
                     key={message.id}
                     className={`flex ${message.sender === 'user' ? 'justify-end' : 'justify-start'}`}
                   >
                     <div
-                      className={`max-w-[80%] rounded-lg px-4 py-2 ${
+                      className={`max-w-[80%] rounded-lg px-3 py-2 text-sm ${
                         message.sender === 'user'
                           ? 'bg-blue-500 text-white'
                           : 'bg-gray-100 text-gray-900'
@@ -254,13 +275,13 @@ export default function ChatPage() {
                     >
                       <div className="flex items-start gap-2">
                         {message.sender === 'bot' && (
-                          <Bot className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <Bot className="h-3 w-3 mt-0.5 flex-shrink-0" />
                         )}
                         {message.sender === 'user' && (
-                          <User className="h-4 w-4 mt-0.5 flex-shrink-0" />
+                          <User className="h-3 w-3 mt-0.5 flex-shrink-0" />
                         )}
                         <div className="flex-1">
-                          <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                          <p className="whitespace-pre-wrap">{message.content}</p>
                           <p className="text-xs opacity-70 mt-1">
                             {message.timestamp.toLocaleTimeString()}
                           </p>
@@ -272,10 +293,10 @@ export default function ChatPage() {
                 
                 {isLoading && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 rounded-lg px-4 py-2 flex items-center gap-2">
-                      <Bot className="h-4 w-4" />
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      <span className="text-sm text-gray-600">Typing...</span>
+                    <div className="bg-gray-100 rounded-lg px-3 py-2 flex items-center gap-2">
+                      <Bot className="h-3 w-3" />
+                      <Loader2 className="h-3 w-3 animate-spin" />
+                      <span className="text-xs text-gray-600">Typing...</span>
                     </div>
                   </div>
                 )}
@@ -283,75 +304,47 @@ export default function ChatPage() {
                 <div ref={messagesEndRef} />
               </div>
 
+              {/* Quick Actions */}
+              <div className="p-2 border-t bg-gray-50">
+                <div className="flex flex-wrap gap-1">
+                  {quickActions.slice(0, 3).map((action, index) => (
+                    <Button
+                      key={index}
+                      variant="outline"
+                      size="sm"
+                      className="text-xs h-6 px-2"
+                      onClick={() => handleQuickAction(action.action)}
+                    >
+                      {action.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               {/* Input */}
-              <div className="border-t p-4">
+              <div className="border-t p-3">
                 <div className="flex gap-2">
                   <Input
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
-                    placeholder="Ask me anything about your ERP operations..."
+                    placeholder="Ask me anything..."
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
                     disabled={isLoading}
+                    className="text-sm"
                   />
                   <Button 
                     onClick={handleSendMessage} 
                     disabled={!inputValue.trim() || isLoading}
-                    size="icon"
+                    size="sm"
                   >
-                    <Send className="h-4 w-4" />
+                    <Send className="h-3 w-3" />
                   </Button>
                 </div>
               </div>
             </CardContent>
-          </Card>
-        </div>
-
-        {/* Quick Actions Sidebar */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {quickActions.map((action, index) => (
-                <Button
-                  key={index}
-                  variant="outline"
-                  className="w-full justify-start text-left h-auto p-3"
-                  onClick={() => handleQuickAction(action.action)}
-                >
-                  <div>
-                    <div className="font-medium text-sm">{action.label}</div>
-                    <div className="text-xs text-gray-500 mt-1">
-                      Click to ask about this
-                    </div>
-                  </div>
-                </Button>
-              ))}
-            </CardContent>
-          </Card>
-
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle className="text-lg">System Status</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-sm">API Status</span>
-                <Badge className="bg-green-100 text-green-800">Online</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Database</span>
-                <Badge className="bg-green-100 text-green-800">Connected</Badge>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Anomaly Detection</span>
-                <Badge className="bg-green-100 text-green-800">Active</Badge>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
+          </>
+        )}
+      </Card>
     </div>
   );
 }

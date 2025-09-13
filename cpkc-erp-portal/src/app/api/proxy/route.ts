@@ -13,6 +13,9 @@ export async function GET(request: NextRequest) {
     console.log('API_KEY:', API_KEY ? '***' + API_KEY.slice(-4) : 'Not set');
     
     // Build the target URL
+    if (!API_BASE_URL) {
+      throw new Error('API_BASE_URL environment variable is not set');
+    }
     const targetUrl = new URL(API_BASE_URL);
     
     // Copy all search parameters from the request
@@ -21,7 +24,7 @@ export async function GET(request: NextRequest) {
     });
     
     // Add API key if not present
-    if (!targetUrl.searchParams.has('key')) {
+    if (!targetUrl.searchParams.has('key') && API_KEY) {
       targetUrl.searchParams.append('key', API_KEY);
     }
     
@@ -70,6 +73,9 @@ export async function POST(request: NextRequest) {
     console.log('API_KEY:', API_KEY ? '***' + API_KEY.slice(-4) : 'Not set');
     
     // Build the target URL
+    if (!API_BASE_URL) {
+      throw new Error('API_BASE_URL environment variable is not set');
+    }
     const targetUrl = new URL(API_BASE_URL);
     
     // Copy all search parameters from the request
@@ -78,7 +84,7 @@ export async function POST(request: NextRequest) {
     });
     
     // Add API key if not present
-    if (!targetUrl.searchParams.has('key')) {
+    if (!targetUrl.searchParams.has('key') && API_KEY) {
       targetUrl.searchParams.append('key', API_KEY);
     }
     
@@ -128,6 +134,9 @@ export async function PATCH(request: NextRequest) {
     console.log('API_KEY:', API_KEY ? '***' + API_KEY.slice(-4) : 'Not set');
     
     // Build the target URL
+    if (!API_BASE_URL) {
+      throw new Error('API_BASE_URL environment variable is not set');
+    }
     const targetUrl = new URL(API_BASE_URL);
     
     // Copy all search parameters from the request
@@ -136,7 +145,7 @@ export async function PATCH(request: NextRequest) {
     });
     
     // Add API key if not present
-    if (!targetUrl.searchParams.has('key')) {
+    if (!targetUrl.searchParams.has('key') && API_KEY) {
       targetUrl.searchParams.append('key', API_KEY);
     }
     
