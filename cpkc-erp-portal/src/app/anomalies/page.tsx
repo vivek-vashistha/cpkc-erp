@@ -106,7 +106,7 @@ export default function AnomaliesPage() {
         const isActionButton = target.closest('[data-anomaly-id]');
         const isBackdrop = target.classList.contains('fixed') && target.classList.contains('inset-0');
         if (!isInsideActionMenu && !isActionButton && !isBackdrop) {
-          setActionMenus(new Set());
+        setActionMenus(new Set());
           setActiveMenuId(null);
         }
       }
@@ -392,7 +392,7 @@ export default function AnomaliesPage() {
       console.log('Closing menu for:', anomalyId);
       setActiveMenuId(null);
       setActionMenus(new Set());
-    } else {
+      } else {
       // Open this menu and close others
       console.log('Opening menu for:', anomalyId, 'closing others');
       setActiveMenuId(anomalyId);
@@ -451,14 +451,20 @@ export default function AnomaliesPage() {
     }
 
     switch (action) {
-      case 'resolve':
+      case 'accept':
         handleStatusUpdate(anomalyId, 'RESOLVED');
         break;
-      case 'ignore':
+      case 'reject':
         handleStatusUpdate(anomalyId, 'IGNORED');
         break;
       case 'new':
         handleStatusUpdate(anomalyId, 'NEW');
+        break;
+      case 'modify':
+        console.log('Modify button clicked for anomaly:', anomalyId);
+        break;
+      case 'escalate':
+        alert(`Ticket has been raised for the anomaly ${anomaly.waybill_id}`);
         break;
       case 'chat':
         handleChatWithAnomaly(anomaly);
@@ -557,7 +563,16 @@ export default function AnomaliesPage() {
         created_ts: anomaly.created_ts || new Date().toISOString(),
         updated_ts: anomaly.updated_ts || new Date().toISOString(),
         details: anomaly.details || '',
-        needs_confirmation: anomaly.needs_confirmation || false
+        needs_confirmation: anomaly.needs_confirmation || false,
+        // Preserve all RPA-related fields from backend response
+        rpa_status: anomaly.rpa_status,
+        rpa_submission_ts: anomaly.rpa_submission_ts,
+        rpa_completion_ts: anomaly.rpa_completion_ts,
+        rpa_error_message: anomaly.rpa_error_message,
+        rpa_workflow_id: anomaly.rpa_workflow_id,
+        rpa_retry_count: anomaly.rpa_retry_count,
+        human_confirmed: anomaly.human_confirmed,
+        rpa_actions: anomaly.rpa_actions
       }));
       
       // Add new anomalies to the existing list
@@ -646,18 +661,32 @@ export default function AnomaliesPage() {
                       {!isResolved && !isIgnored && (
                         <>
                           <button
-                            onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                            onClick={() => handleQuickAction(anomaly.id, 'accept')}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             <CheckCircle className="h-4 w-4 text-green-600" />
-                            Mark as Resolved
+                            Accept
                           </button>
                           <button
-                            onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                            onClick={() => handleQuickAction(anomaly.id, 'reject')}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
-                            <XCircle className="h-4 w-4 text-gray-600" />
-                            Mark as Ignored
+                            <XCircle className="h-4 w-4 text-red-600" />
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'modify')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <Settings className="h-4 w-4 text-blue-600" />
+                            Modify
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'escalate')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            Escalate
                           </button>
                         </>
                       )}
@@ -673,11 +702,25 @@ export default function AnomaliesPage() {
                             Move to New
                           </button>
                           <button
-                            onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                            onClick={() => handleQuickAction(anomaly.id, 'reject')}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
-                            <XCircle className="h-4 w-4 text-gray-600" />
-                            Move to Ignored
+                            <XCircle className="h-4 w-4 text-red-600" />
+                            Reject
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'modify')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <Settings className="h-4 w-4 text-blue-600" />
+                            Modify
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'escalate')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            Escalate
                           </button>
                         </>
                       )}
@@ -693,11 +736,25 @@ export default function AnomaliesPage() {
                             Move to New
                           </button>
                           <button
-                            onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                            onClick={() => handleQuickAction(anomaly.id, 'accept')}
                             className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                           >
                             <CheckCircle className="h-4 w-4 text-green-600" />
-                            Move to Resolved
+                            Accept
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'modify')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <Settings className="h-4 w-4 text-blue-600" />
+                            Modify
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'escalate')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            Escalate
                           </button>
                         </>
                       )}
@@ -946,7 +1003,7 @@ export default function AnomaliesPage() {
             </CardHeader>
             <CardContent className="overflow-visible">
               <div className="overflow-visible">
-                <Table>
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -1002,7 +1059,7 @@ export default function AnomaliesPage() {
                             >
                               <Badge variant="outline" className="text-xs cursor-help">
                                 {formatSuggestedFix(anomaly.suggested_fix)}
-                              </Badge>
+                            </Badge>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -1115,7 +1172,7 @@ export default function AnomaliesPage() {
             </CardHeader>
             <CardContent className="overflow-visible">
               <div className="overflow-visible">
-                <Table>
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -1170,7 +1227,7 @@ export default function AnomaliesPage() {
                           >
                             <Badge variant="outline" className="text-xs cursor-help">
                               {formatSuggestedFix(anomaly.suggested_fix)}
-                            </Badge>
+                          </Badge>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -1200,15 +1257,15 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell>
                           <div className="flex items-center gap-1 relative z-10">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleActionMenu(anomaly.id)}
-                              className="h-8 w-8 p-0"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActionMenu(anomaly.id)}
+                            className="h-8 w-8 p-0"
                               data-anomaly-id={anomaly.id}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                             {activeMenuId === anomaly.id && (
                               <>
                                 {/* Backdrop to prevent interaction with elements behind */}
@@ -1289,8 +1346,8 @@ export default function AnomaliesPage() {
                                     </>
                                   ) : (
                                     <>
-                                      <Trash2 className="h-4 w-4" />
-                                      Delete
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
                                     </>
                                   )}
                                 </button>
@@ -1319,7 +1376,7 @@ export default function AnomaliesPage() {
             </CardHeader>
             <CardContent className="overflow-visible">
               <div className="overflow-visible">
-                <Table>
+              <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -1374,7 +1431,7 @@ export default function AnomaliesPage() {
                           >
                             <Badge variant="outline" className="text-xs cursor-help">
                               {formatSuggestedFix(anomaly.suggested_fix)}
-                            </Badge>
+                          </Badge>
                           </div>
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-full h-1.5">
@@ -1404,15 +1461,15 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell>
                           <div className="flex items-center gap-1 relative z-10">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleActionMenu(anomaly.id)}
-                              className="h-8 w-8 p-0"
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => toggleActionMenu(anomaly.id)}
+                            className="h-8 w-8 p-0"
                               data-anomaly-id={anomaly.id}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
+                          >
+                            <MoreHorizontal className="h-4 w-4" />
+                          </Button>
                             {activeMenuId === anomaly.id && (
                               <>
                                 {/* Backdrop to prevent interaction with elements behind */}
@@ -1493,8 +1550,8 @@ export default function AnomaliesPage() {
                                     </>
                                   ) : (
                                     <>
-                                      <Trash2 className="h-4 w-4" />
-                                      Delete
+                                  <Trash2 className="h-4 w-4" />
+                                  Delete
                                     </>
                                   )}
                                 </button>
