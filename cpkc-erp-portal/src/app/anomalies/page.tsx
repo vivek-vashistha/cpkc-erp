@@ -7,12 +7,49 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiService, type Anomaly } from '@/lib/api';
+import { apiService, type Anomaly, type SuggestedFix } from '@/lib/api';
 import { formatDate, getStatusColor, isRPAEligible, getRPAEligibilityReason } from '@/lib/utils';
 import { chatContextManager } from '@/lib/chatContext';
 import { Search, AlertTriangle, CheckCircle, XCircle, Eye, Settings, Trash2, MessageCircle, Bot, Zap, RefreshCw, MoreHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
 import ChatBubble from '@/components/chat/ChatBubble';
 import { RPAStatus, RPAWorkflowDetails } from '@/components/ui/rpa-status';
+
+// Helper function to format suggested_fix display
+const formatSuggestedFix = (suggestedFix: string | SuggestedFix): string => {
+  if (typeof suggestedFix === 'string') {
+    return suggestedFix;
+  }
+  
+  if (suggestedFix && suggestedFix.actions && suggestedFix.actions.length > 0) {
+    return suggestedFix.actions.map(action => action.name).join(', ');
+  }
+  
+  return 'Manual review required';
+};
+
+// Helper function to get rationale for tooltip
+const getSuggestedFixRationale = (suggestedFix: string | SuggestedFix): string => {
+  if (typeof suggestedFix === 'string') {
+    return suggestedFix;
+  }
+  
+  if (suggestedFix && suggestedFix.actions && suggestedFix.actions.length > 0) {
+    return suggestedFix.actions.map(action => 
+      action.rationale ? `${action.name}: ${action.rationale}` : action.name
+    ).join('\n');
+  }
+  
+  return 'Manual review required';
+};
+
+// Helper function to get suggested fix details for expanded view
+const getSuggestedFixDetails = (suggestedFix: string | SuggestedFix) => {
+  if (typeof suggestedFix === 'string') {
+    return { actions: [{ name: suggestedFix, args: [], rationale: '' }] };
+  }
+  
+  return suggestedFix || { actions: [] };
+};
 
 export default function AnomaliesPage() {
   const [anomalies, setAnomalies] = useState<Anomaly[]>([]);
@@ -372,16 +409,16 @@ export default function AnomaliesPage() {
       
       // Add the new anomalies to the existing list
       const newAnomalies = parsedAnomalies.map((anomaly: any) => ({
-        id: `anomaly_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+        id: anomaly.id || `anomaly_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         waybill_id: anomaly.waybill_id,
         car_id: anomaly.car_id,
         csn_id: anomaly.csn_id,
         type: anomaly.type,
         confidence: anomaly.confidence,
-        suggested_fix: anomaly.suggested_fix?.action || 'Manual review required',
+        suggested_fix: anomaly.suggested_fix || 'Manual review required',
         status: anomaly.status || 'NEW',
-        created_ts: new Date().toISOString(),
-        updated_ts: new Date().toISOString(),
+        created_ts: anomaly.created_ts || new Date().toISOString(),
+        updated_ts: anomaly.updated_ts || new Date().toISOString(),
         details: anomaly.details || '',
         needs_confirmation: anomaly.needs_confirmation || false
       }));
@@ -671,9 +708,14 @@ export default function AnomaliesPage() {
                         </TableCell>
                         <TableCell>
                           <div className="space-y-2">
-                            <Badge variant="outline" className="text-xs">
-                              {anomaly.suggested_fix}
-                            </Badge>
+                            <div 
+                              className="inline-block"
+                              title={getSuggestedFixRationale(anomaly.suggested_fix)}
+                            >
+                              <Badge variant="outline" className="text-xs cursor-help">
+                                {formatSuggestedFix(anomaly.suggested_fix)}
+                              </Badge>
+                            </div>
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-1.5">
                                 <div 
@@ -771,7 +813,28 @@ export default function AnomaliesPage() {
                                 <div>
                                   <h4 className="font-medium text-sm text-gray-900 mb-2">Suggested Fix</h4>
                                   <div className="space-y-1 text-sm">
-                                    <div><span className="font-medium">Action:</span> {anomaly.suggested_fix}</div>
+                                    <div><span className="font-medium">Actions:</span></div>
+                                    {getSuggestedFixDetails(anomaly.suggested_fix).actions.map((action, index) => (
+                                      <div key={index} className="ml-4 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
+                                        <div className="font-medium text-blue-800">{action.name}</div>
+                                        {action.args && action.args.length > 0 && (
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            <span className="font-medium">Arguments:</span>
+                                            {action.args.map((arg, argIndex) => (
+                                              <span key={argIndex} className="ml-1">
+                                                {arg.key}: {arg.value}
+                                                {argIndex < action.args.length - 1 ? ', ' : ''}
+                                              </span>
+                                            ))}
+                                          </div>
+                                        )}
+                                        {action.rationale && (
+                                          <div className="text-xs text-gray-600 mt-1">
+                                            <span className="font-medium">Rationale:</span> {action.rationale}
+                                          </div>
+                                        )}
+                                      </div>
+                                    ))}
                                     <div><span className="font-medium">Confidence:</span> {(anomaly.confidence * 100).toFixed(0)}%</div>
                                     <div><span className="font-medium">Needs Confirmation:</span> {anomaly.needs_confirmation ? 'Yes' : 'No'}</div>
                                   </div>
@@ -851,9 +914,14 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-2">
-                          <Badge variant="outline" className="text-xs">
-                            {anomaly.suggested_fix}
-                          </Badge>
+                          <div 
+                            className="inline-block"
+                            title={getSuggestedFixRationale(anomaly.suggested_fix)}
+                          >
+                            <Badge variant="outline" className="text-xs cursor-help">
+                              {formatSuggestedFix(anomaly.suggested_fix)}
+                            </Badge>
+                          </div>
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-full h-1.5">
                               <div 
@@ -999,9 +1067,14 @@ export default function AnomaliesPage() {
                       </TableCell>
                       <TableCell>
                         <div className="space-y-2">
-                          <Badge variant="outline" className="text-xs">
-                            {anomaly.suggested_fix}
-                          </Badge>
+                          <div 
+                            className="inline-block"
+                            title={getSuggestedFixRationale(anomaly.suggested_fix)}
+                          >
+                            <Badge variant="outline" className="text-xs cursor-help">
+                              {formatSuggestedFix(anomaly.suggested_fix)}
+                            </Badge>
+                          </div>
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-full h-1.5">
                               <div 

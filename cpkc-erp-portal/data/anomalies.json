@@ -1,6 +1,30 @@
 [
   {
     "id": "anomaly_1757683666935_4c2y5npvm",
+    "waybill_id": "WB3006",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "MISSING_STEP",
+    "confidence": 0.95,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "INSERT_EVENT",
+          "args": [
+            { "key": "event_type", "value": "In Transit" }
+          ],
+          "rationale": "The sequence is missing the 'In Transit' event after 'Picked Up'."
+        }
+      ]
+    },
+    "status": "NEW",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "The waybill events are missing the 'In Transit' step after 'Picked Up'.",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvm",
     "waybill_id": "WB3019",
     "car_id": "CPKC-1001",
     "csn_id": "CSN-CPKC-1001-202509-A",

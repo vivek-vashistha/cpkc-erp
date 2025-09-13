@@ -49,6 +49,16 @@ export interface Operation {
   signature?: string;
 }
 
+export interface SuggestedFixAction {
+  name: string;
+  args: Array<{ key: string; value: string }>;
+  rationale: string;
+}
+
+export interface SuggestedFix {
+  actions: SuggestedFixAction[];
+}
+
 export interface Anomaly {
   id: string;
   waybill_id: string;
@@ -56,7 +66,7 @@ export interface Anomaly {
   csn_id: string;
   type: string;
   confidence: number;
-  suggested_fix: string;
+  suggested_fix: string | SuggestedFix;
   status: 'NEW' | 'RESOLVED' | 'IGNORED';
   created_ts: string;
   updated_ts: string;

@@ -70,3 +70,4 @@ venv
 .next
 node_modules
 anomalies copy.json
+outputFormat.py
