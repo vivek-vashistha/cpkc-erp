@@ -1,5 +1,5 @@
 {
-    "dependencies": ["."],
+    "dependencies": ["./backend/agent"],
     "graphs": {
       "agent": "./agent_waybill_agentic_loggs.py:graph"
     },
