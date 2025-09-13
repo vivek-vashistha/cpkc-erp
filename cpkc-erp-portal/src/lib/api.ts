@@ -73,7 +73,7 @@ export interface Anomaly {
   details?: string;
   needs_confirmation?: boolean;
   // RPA Integration fields
-  rpa_status?: 'PENDING' | 'SUBMITTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
+  rpa_status?: 'Auto Fix' | 'Manual Review Required' | 'Needs Data' | 'PENDING' | 'SUBMITTED' | 'IN_PROGRESS' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
   rpa_submission_ts?: string;
   rpa_completion_ts?: string;
   rpa_error_message?: string;

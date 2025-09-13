@@ -46,6 +46,12 @@ export function getStatusColor(status: string) {
 
 export function getRPAStatusColor(status: string): string {
   switch (status) {
+    case 'Auto Fix':
+      return 'bg-green-100 text-green-800';
+    case 'Manual Review Required':
+      return 'bg-orange-100 text-orange-800';
+    case 'Needs Data':
+      return 'bg-yellow-100 text-yellow-800';
     case 'PENDING':
       return 'bg-yellow-100 text-yellow-800';
     case 'SUBMITTED':
@@ -65,6 +71,12 @@ export function getRPAStatusColor(status: string): string {
 
 export function getRPAStatusIcon(status: string): string {
   switch (status) {
+    case 'Auto Fix':
+      return '🤖';
+    case 'Manual Review Required':
+      return '👤';
+    case 'Needs Data':
+      return '📋';
     case 'PENDING':
       return '⏳';
     case 'SUBMITTED':
@@ -92,7 +104,7 @@ export function isRPAEligible(anomaly: any): boolean {
   return anomaly.suggested_fix && 
          anomaly.suggested_fix !== 'Manual review required' &&
          anomaly.confidence > 0.7 &&
-         !anomaly.rpa_status;
+         (!anomaly.rpa_status || anomaly.rpa_status === 'Auto Fix');
 }
 
 export function getRPAEligibilityReason(anomaly: any): string {
@@ -102,8 +114,14 @@ export function getRPAEligibilityReason(anomaly: any): string {
   if (anomaly.confidence <= 0.7) {
     return 'Confidence too low for auto-fix';
   }
-  if (anomaly.rpa_status) {
-    return 'Already submitted to RPA';
+  if (anomaly.rpa_status === 'Manual Review Required') {
+    return 'Requires manual review';
+  }
+  if (anomaly.rpa_status === 'Needs Data') {
+    return 'Needs additional data';
+  }
+  if (anomaly.rpa_status && anomaly.rpa_status !== 'Auto Fix') {
+    return 'Already processed';
   }
   return 'Eligible for RPA';
 }

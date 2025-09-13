@@ -46,9 +46,15 @@ export function RPAStatus({ anomaly, onRetry, onCancel, onViewDetails }: RPAStat
       };
     }
 
+    // Handle the new status values from system prompt
+    const statusText = rpaStatus === 'Auto Fix' ? 'Auto Fix' : 
+                      rpaStatus === 'Manual Review Required' ? 'Manual Review' :
+                      rpaStatus === 'Needs Data' ? 'Needs Data' :
+                      rpaStatus.replace('_', ' ');
+
     return {
       icon: <span className="text-xs">{getRPAStatusIcon(rpaStatus)}</span>,
-      text: rpaStatus.replace('_', ' '),
+      text: statusText,
       color: getRPAStatusColor(rpaStatus)
     };
   };
@@ -69,6 +75,34 @@ export function RPAStatus({ anomaly, onRetry, onCancel, onViewDetails }: RPAStat
       );
     }
 
+    // Handle new status values
+    if (rpaStatus === 'Auto Fix') {
+      return (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onViewDetails?.(anomaly)}
+          className="h-6 px-2 text-xs"
+        >
+          <Play className="h-3 w-3" />
+        </Button>
+      );
+    }
+
+    if (rpaStatus === 'Manual Review Required' || rpaStatus === 'Needs Data') {
+      return (
+        <Button
+          size="sm"
+          variant="ghost"
+          onClick={() => onViewDetails?.(anomaly)}
+          className="h-6 px-2 text-xs"
+        >
+          <Eye className="h-3 w-3" />
+        </Button>
+      );
+    }
+
+    // Handle workflow statuses
     if (rpaStatus === 'FAILED') {
       return (
         <Button

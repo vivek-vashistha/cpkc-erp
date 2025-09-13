@@ -36,6 +36,18 @@ The user provides a waybill ID (e.g., “WB3005”, possibly embedded in a sente
    c) value from the earliest event that has one.
    Set "needs_confirmation": true whenever "suggested_fix" is not null.
 
+### RPA STATUS GUIDE (for "rpa_status")
+- Use "Auto Fix" for anomalies the bot can deterministically repair:
+  * "MISSING_STEP" (e.g., insert missing "Closed" after "Delivered")
+  * "MULTI_DELIVERED" (merge duplicates; keep the most plausible single Delivered)
+  * "SEQUENCE_ERROR" (reorder to match canonical sequence when timestamps support it)
+- Use "Manual Review Required" for all other anomaly types:
+  * "NEGATIVE_DURATION", "TERMINAL_CONFLICT", "POST_TERMINAL_ACTIVITY",
+    "UNKNOWN_EVENT_TYPE", "CARID_INCONSISTENT", "CARID_MISSING",
+    "CSNID_INCONSISTENT", "CSNID_MISSING"
+- Use "Needs Data" only when insufficient information prevents proposing a fix
+  (e.g., events not returned, essential timestamps entirely missing, or tool/data fetch errors).
+- Important: this guide does not change the "needs_confirmation" rule above.
 
 ### OUTPUT CONTRACT (STRICT)
 - Return ONLY a valid JSON array (UTF-8). No markdown, no backticks, no prose.
@@ -51,17 +63,20 @@ The user provides a waybill ID (e.g., “WB3005”, possibly embedded in a sente
   "suggested_fix": {
     "actions": [
       {
-        "name": "SET_CSNID"|"SET_CARID"|"INSERT_EVENT"|"REORDER_EVENTS"|"CORRECT_EVENT_TS"|"REVIEW_TERMINAL_STATE"|"MERGE_DUPLICATE_EVENTS"|"TRIM_POST_TERMINAL_EVENTS"|"MAP_EVENT_TYPE",
+        "name": "INSERT_EVENT"|"REORDER_EVENTS"|"CORRECT_EVENT_TS"|"REVIEW_TERMINAL_STATE"|
+             "MERGE_DUPLICATE_EVENTS"|"TRIM_POST_TERMINAL_EVENTS"|"MAP_EVENT_TYPE"|
+             "SET_CARID"|"SET_CSNID"|null,
         "args": [ { "key": string, "value": string } ],  // e.g. [{"key":"CSNID","value":"CSN-CPKC-1001-202509-A"}]
         "rationale": string    // detailed human-friendly description of the action
       }
     ]
   },
   "status": "NEW"|"UNCHANGED",
+  "rpa_status": "Auto Fix"|"Manual Review Required"|"Needs Data"|null,   Important: always set this field.
   "created_ts": string,                   // ISO 8601 UTC with trailing "Z" (e.g., "2025-09-12T13:27:46.935Z")
   "updated_ts": string,                   // same format; for a new record equals created_ts
   "details": string,                     // Detailed human-friendly description of the anomaly
-  "needs_confirmation": boolean
+  "needs_confirmation": boolean         // true if human intervention is required
 }
 
 - IDs: generate as anomaly_{epochMillis}_{10-char lowercase a-z0-9}.
@@ -91,10 +106,11 @@ The user provides a waybill ID (e.g., “WB3005”, possibly embedded in a sente
       ]
     },
     "status": "NEW",
+    "rpa_status": "Auto Fix",
     "created_ts": "2025-09-12T13:27:46.935Z",
     "updated_ts": "2025-09-12T13:27:46.935Z",
     "details": "Multiple CSNId values across events; minority at 'At Border'",
-    "needs_confirmation": true
+    "needs_confirmation": false
   }
 ]
 
