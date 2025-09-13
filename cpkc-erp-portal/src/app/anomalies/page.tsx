@@ -67,6 +67,9 @@ export default function AnomaliesPage() {
   const [rpaStatusUpdates, setRpaStatusUpdates] = useState<Map<string, any>>(new Map());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   const [actionMenus, setActionMenus] = useState<Set<string>>(new Set());
+  const [activeMenuId, setActiveMenuId] = useState<string | null>(null);
+  const [deletingAnomalies, setDeletingAnomalies] = useState<Set<string>>(new Set());
+  const [dropdownPosition, setDropdownPosition] = useState<{ [key: string]: { top: number; left: number; position: 'above' | 'below' } }>({});
 
   useEffect(() => {
     const fetchAnomalies = async () => {
@@ -96,8 +99,16 @@ export default function AnomaliesPage() {
   // Close action menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (actionMenus.size > 0) {
-        setActionMenus(new Set());
+      if (activeMenuId) {
+        // Check if the click is outside any action menu
+        const target = event.target as Element;
+        const isInsideActionMenu = target.closest('[data-action-menu]');
+        const isActionButton = target.closest('[data-anomaly-id]');
+        const isBackdrop = target.classList.contains('fixed') && target.classList.contains('inset-0');
+        if (!isInsideActionMenu && !isActionButton && !isBackdrop) {
+          setActionMenus(new Set());
+          setActiveMenuId(null);
+        }
       }
     };
 
@@ -105,7 +116,62 @@ export default function AnomaliesPage() {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [actionMenus]);
+  }, [activeMenuId]);
+
+  // Recalculate dropdown position on scroll
+  useEffect(() => {
+    const handleScroll = () => {
+      if (activeMenuId && dropdownPosition[activeMenuId]) {
+        const button = document.querySelector(`[data-anomaly-id="${activeMenuId}"]`);
+        if (button) {
+          const rect = button.getBoundingClientRect();
+          const viewportHeight = window.innerHeight;
+          const viewportWidth = window.innerWidth;
+          const dropdownHeight = 200;
+          const dropdownWidth = 192;
+          
+          // Position dropdown right next to the button
+          let top = rect.bottom + 8; // Small gap below button
+          let left = rect.right - dropdownWidth; // Align to right edge of button
+          let position: 'above' | 'below' = 'below';
+          
+          // Check if dropdown would go off screen vertically
+          if (top + dropdownHeight > viewportHeight - 10) {
+            // Position above button if not enough space below
+            top = rect.top - dropdownHeight - 8;
+            position = 'above';
+          }
+          
+          // Ensure dropdown doesn't go off left edge
+          if (left < 10) {
+            left = 10;
+          }
+          
+          // Ensure dropdown doesn't go off right edge
+          if (left + dropdownWidth > viewportWidth - 10) {
+            left = viewportWidth - dropdownWidth - 10;
+          }
+          
+          // If still not enough space, center it horizontally
+          if (left < 10) {
+            left = Math.max(10, (viewportWidth - dropdownWidth) / 2);
+          }
+          
+          setDropdownPosition(prev => ({ 
+            ...prev, 
+            [activeMenuId]: { top, left, position }
+          }));
+        }
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('resize', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [activeMenuId, dropdownPosition]);
 
   const filteredAnomalies = anomalies.filter(anomaly => 
     anomaly.waybill_id.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -130,22 +196,39 @@ export default function AnomaliesPage() {
   };
 
   const handleDeleteAnomaly = async (id: string) => {
+    console.log('Delete button clicked for anomaly:', id);
     if (confirm('Are you sure you want to delete this anomaly?')) {
+      setDeletingAnomalies(prev => new Set(prev).add(id));
       try {
+        console.log('Attempting to delete anomaly from file:', id);
         // Delete from file first
         const success = await apiService.deleteAnomalyFromFile(id);
+        console.log('Delete API response:', success);
         if (success) {
           // Update local state
           const updatedAnomalies = anomalies.filter(anomaly => anomaly.id !== id);
           setAnomalies(updatedAnomalies);
-          console.log('Anomaly deleted:', id);
+          console.log('Anomaly deleted successfully:', id);
           // Clear duplicate warning if it was related to this deletion
           setDuplicateWarning('');
           // Remove from chat context if it exists
           chatContextManager.removeAnomalyFromContext(id);
+          // Close the action menu after successful deletion
+          setActionMenus(new Set());
+          setActiveMenuId(null);
+        } else {
+          console.error('Delete API returned false');
+          alert('Failed to delete anomaly. Please try again.');
         }
       } catch (error) {
         console.error('Failed to delete anomaly:', error);
+        alert('Failed to delete anomaly. Please try again.');
+      } finally {
+        setDeletingAnomalies(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(id);
+          return newSet;
+        });
       }
     }
   };
@@ -301,20 +384,71 @@ export default function AnomaliesPage() {
   };
 
   const toggleActionMenu = (anomalyId: string) => {
-    setActionMenus(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(anomalyId)) {
-        newSet.delete(anomalyId);
-      } else {
-        newSet.add(anomalyId);
+    console.log('Toggle action menu for anomaly:', anomalyId);
+    console.log('Current active menu:', activeMenuId);
+    
+    if (activeMenuId === anomalyId) {
+      // Close this menu
+      console.log('Closing menu for:', anomalyId);
+      setActiveMenuId(null);
+      setActionMenus(new Set());
+    } else {
+      // Open this menu and close others
+      console.log('Opening menu for:', anomalyId, 'closing others');
+      setActiveMenuId(anomalyId);
+      setActionMenus(new Set([anomalyId]));
+      
+      // Calculate exact position
+      const button = document.querySelector(`[data-anomaly-id="${anomalyId}"]`);
+      if (button) {
+        const rect = button.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
+        const dropdownHeight = 200; // Approximate dropdown height
+        const dropdownWidth = 192; // 48 * 4 (w-48)
+        
+        // Position dropdown right next to the button
+        let top = rect.bottom + 8; // Small gap below button
+        let left = rect.right - dropdownWidth; // Align to right edge of button
+        let position: 'above' | 'below' = 'below';
+        
+        // Check if dropdown would go off screen vertically
+        if (top + dropdownHeight > viewportHeight - 10) {
+          // Position above button if not enough space below
+          top = rect.top - dropdownHeight - 8;
+          position = 'above';
+        }
+        
+        // Ensure dropdown doesn't go off left edge
+        if (left < 10) {
+          left = 10;
+        }
+        
+        // Ensure dropdown doesn't go off right edge
+        if (left + dropdownWidth > viewportWidth - 10) {
+          left = viewportWidth - dropdownWidth - 10;
+        }
+        
+        // If still not enough space, center it horizontally
+        if (left < 10) {
+          left = Math.max(10, (viewportWidth - dropdownWidth) / 2);
+        }
+        
+        setDropdownPosition(prev => ({ 
+          ...prev, 
+          [anomalyId]: { top, left, position }
+        }));
       }
-      return newSet;
-    });
+    }
   };
 
   const handleQuickAction = (anomalyId: string, action: string) => {
+    console.log('Quick action triggered:', action, 'for anomaly:', anomalyId);
     const anomaly = anomalies.find(a => a.id === anomalyId);
-    if (!anomaly) return;
+    if (!anomaly) {
+      console.error('Anomaly not found:', anomalyId);
+      return;
+    }
 
     switch (action) {
       case 'resolve':
@@ -323,21 +457,24 @@ export default function AnomaliesPage() {
       case 'ignore':
         handleStatusUpdate(anomalyId, 'IGNORED');
         break;
+      case 'new':
+        handleStatusUpdate(anomalyId, 'NEW');
+        break;
       case 'chat':
         handleChatWithAnomaly(anomaly);
         break;
       case 'delete':
+        console.log('Delete action triggered for anomaly:', anomalyId);
         handleDeleteAnomaly(anomalyId);
-        break;
+        // Don't close menu here - let delete function handle it
+        return;
       case 'rpa':
         handleViewRpaDetails(anomaly);
         break;
     }
-    setActionMenus(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(anomalyId);
-      return newSet;
-    });
+    // Close all menus for all actions except delete
+    setActionMenus(new Set());
+    setActiveMenuId(null);
   };
 
   const checkForDuplicates = (inputValue: string) => {
@@ -458,7 +595,157 @@ export default function AnomaliesPage() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-6 overflow-visible">
+      {/* Portal container for dropdowns */}
+      <div id="dropdown-portal" className="fixed inset-0 pointer-events-none z-[999999]" style={{ zIndex: 999999 }}>
+        {activeMenuId && dropdownPosition[activeMenuId] && (
+          <>
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 pointer-events-auto"
+              style={{ 
+                position: 'fixed', 
+                top: 0, 
+                left: 0, 
+                right: 0, 
+                bottom: 0,
+                backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                zIndex: 999998
+              }}
+              onClick={() => {
+                setActionMenus(new Set());
+                setActiveMenuId(null);
+              }}
+            />
+            {/* Dropdown */}
+            <div 
+              className="fixed w-48 bg-white rounded-md shadow-2xl border-2 border-gray-200 pointer-events-auto"
+              data-action-menu
+              style={{ 
+                position: 'fixed',
+                top: `${dropdownPosition[activeMenuId]?.top || 0}px`,
+                left: `${dropdownPosition[activeMenuId]?.left || 0}px`,
+                minWidth: '192px',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                backgroundColor: 'white',
+                zIndex: 999999
+              }}
+            >
+              <div className="py-1">
+                {(() => {
+                  const anomaly = anomalies.find(a => a.id === activeMenuId);
+                  if (!anomaly) return null;
+                  
+                  const isResolved = anomaly.status === 'RESOLVED';
+                  const isIgnored = anomaly.status === 'IGNORED';
+                  
+                  return (
+                    <>
+                      {/* For NEW anomalies */}
+                      {!isResolved && !isIgnored && (
+                        <>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            Mark as Resolved
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <XCircle className="h-4 w-4 text-gray-600" />
+                            Mark as Ignored
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* For RESOLVED anomalies */}
+                      {isResolved && (
+                        <>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'new')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            Move to New
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'ignore')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <XCircle className="h-4 w-4 text-gray-600" />
+                            Move to Ignored
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* For IGNORED anomalies */}
+                      {isIgnored && (
+                        <>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'new')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            Move to New
+                          </button>
+                          <button
+                            onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                          >
+                            <CheckCircle className="h-4 w-4 text-green-600" />
+                            Move to Resolved
+                          </button>
+                        </>
+                      )}
+                      
+                      {/* Common buttons for all statuses */}
+                      <button
+                        onClick={() => handleQuickAction(anomaly.id, 'chat')}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <MessageCircle className="h-4 w-4 text-blue-600" />
+                        Chat about this
+                      </button>
+                      <button
+                        onClick={() => handleQuickAction(anomaly.id, 'rpa')}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      >
+                        <Bot className="h-4 w-4 text-purple-600" />
+                        RPA Details
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleQuickAction(anomaly.id, 'delete');
+                        }}
+                        disabled={deletingAnomalies.has(anomaly.id)}
+                        className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {deletingAnomalies.has(anomaly.id) ? (
+                          <>
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                            Deleting...
+                          </>
+                        ) : (
+                          <>
+                            <Trash2 className="h-4 w-4" />
+                            Delete
+                          </>
+                        )}
+                      </button>
+                    </>
+                  );
+                })()}
+              </div>
+            </div>
+          </>
+        )}
+      </div>
       <div className="mb-8">
         <div className="flex items-center justify-between">
           <div>
@@ -633,7 +920,7 @@ export default function AnomaliesPage() {
         </Card>
       </div>
 
-      <Tabs defaultValue="new" className="space-y-6">
+      <Tabs defaultValue="new" className="space-y-6 overflow-visible">
         <TabsList>
           <TabsTrigger value="new" className="flex items-center gap-2">
             <AlertTriangle className="h-4 w-4" />
@@ -657,8 +944,9 @@ export default function AnomaliesPage() {
                 Anomalies that require immediate attention
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
+            <CardContent className="overflow-visible">
+              <div className="overflow-visible">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -679,7 +967,7 @@ export default function AnomaliesPage() {
                 <TableBody>
                   {newAnomalies.map((anomaly) => (
                     <>
-                      <TableRow key={anomaly.id} className="hover:bg-gray-50">
+                      <TableRow key={anomaly.id} className="hover:bg-gray-50 relative">
                         <TableCell>
                           <input
                             type="checkbox"
@@ -743,56 +1031,16 @@ export default function AnomaliesPage() {
                           </span>
                         </TableCell>
                         <TableCell>
-                          <div className="flex items-center gap-1">
+                          <div className="flex items-center gap-1 relative z-10">
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => toggleActionMenu(anomaly.id)}
                               className="h-8 w-8 p-0"
+                              data-anomaly-id={anomaly.id}
                             >
                               <MoreHorizontal className="h-4 w-4" />
                             </Button>
-                            {actionMenus.has(anomaly.id) && (
-                              <div className="absolute right-0 mt-8 w-48 bg-white rounded-md shadow-lg z-10 border">
-                                <div className="py-1">
-                                  <button
-                                    onClick={() => handleQuickAction(anomaly.id, 'resolve')}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  >
-                                    <CheckCircle className="h-4 w-4 text-green-600" />
-                                    Mark as Resolved
-                                  </button>
-                                  <button
-                                    onClick={() => handleQuickAction(anomaly.id, 'ignore')}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  >
-                                    <XCircle className="h-4 w-4 text-gray-600" />
-                                    Mark as Ignored
-                                  </button>
-                                  <button
-                                    onClick={() => handleQuickAction(anomaly.id, 'chat')}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  >
-                                    <MessageCircle className="h-4 w-4 text-blue-600" />
-                                    Chat about this
-                                  </button>
-                                  <button
-                                    onClick={() => handleQuickAction(anomaly.id, 'rpa')}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                  >
-                                    <Bot className="h-4 w-4 text-purple-600" />
-                                    RPA Details
-                                  </button>
-                                  <button
-                                    onClick={() => handleQuickAction(anomaly.id, 'delete')}
-                                    className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
-                                  >
-                                    <Trash2 className="h-4 w-4" />
-                                    Delete
-                                  </button>
-                                </div>
-                              </div>
-                            )}
                           </div>
                         </TableCell>
                       </TableRow>
@@ -852,6 +1100,7 @@ export default function AnomaliesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -864,8 +1113,9 @@ export default function AnomaliesPage() {
                 Anomalies that have been successfully resolved
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
+            <CardContent className="overflow-visible">
+              <div className="overflow-visible">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -885,7 +1135,7 @@ export default function AnomaliesPage() {
                 </TableHeader>
                 <TableBody>
                   {resolvedAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id} className="hover:bg-gray-50">
+                    <TableRow key={anomaly.id} className="hover:bg-gray-50 relative">
                       <TableCell>
                         <input
                           type="checkbox"
@@ -949,20 +1199,54 @@ export default function AnomaliesPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleActionMenu(anomaly.id)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                          {actionMenus.has(anomaly.id) && (
-                            <div className="absolute right-0 mt-8 w-48 bg-white rounded-md shadow-lg z-10 border">
+                          <div className="flex items-center gap-1 relative z-10">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleActionMenu(anomaly.id)}
+                              className="h-8 w-8 p-0"
+                              data-anomaly-id={anomaly.id}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            {activeMenuId === anomaly.id && (
+                              <>
+                                {/* Backdrop to prevent interaction with elements behind */}
+                                <div 
+                                  className="fixed inset-0 z-[999998]"
+                                  style={{ 
+                                    position: 'fixed', 
+                                    top: 0, 
+                                    left: 0, 
+                                    right: 0, 
+                                    bottom: 0,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                                    zIndex: 999998
+                                  }}
+                                  onClick={() => {
+                                    setActionMenus(new Set());
+                                    setActiveMenuId(null);
+                                  }}
+                                />
+                                {/* Dropdown */}
+                                <div 
+                                  key={`menu-${anomaly.id}`}
+                                  className="fixed w-48 bg-white rounded-md shadow-2xl z-[999999] border-2 border-gray-200" 
+                                  data-action-menu
+                                  style={{ 
+                                    position: 'fixed',
+                                    top: `${dropdownPosition[anomaly.id]?.top || 0}px`,
+                                    left: `${dropdownPosition[anomaly.id]?.left || 0}px`,
+                                    minWidth: '192px',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto',
+                                    backgroundColor: 'white',
+                                    zIndex: 999999
+                                  }}
+                                >
                               <div className="py-1">
                                 <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                                  onClick={() => handleQuickAction(anomaly.id, 'new')}
                                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
                                   <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -990,14 +1274,29 @@ export default function AnomaliesPage() {
                                   RPA Details
                                 </button>
                                 <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'delete')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleQuickAction(anomaly.id, 'delete');
+                                  }}
+                                  disabled={deletingAnomalies.has(anomaly.id)}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
+                                  {deletingAnomalies.has(anomaly.id) ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-4 w-4" />
+                                      Delete
+                                    </>
+                                  )}
                                 </button>
                               </div>
                             </div>
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -1005,6 +1304,7 @@ export default function AnomaliesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -1017,8 +1317,9 @@ export default function AnomaliesPage() {
                 Anomalies marked as false positives
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <Table>
+            <CardContent className="overflow-visible">
+              <div className="overflow-visible">
+                <Table>
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-12">
@@ -1038,7 +1339,7 @@ export default function AnomaliesPage() {
                 </TableHeader>
                 <TableBody>
                   {ignoredAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id} className="hover:bg-gray-50">
+                    <TableRow key={anomaly.id} className="hover:bg-gray-50 relative">
                       <TableCell>
                         <input
                           type="checkbox"
@@ -1102,20 +1403,54 @@ export default function AnomaliesPage() {
                         </span>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleActionMenu(anomaly.id)}
-                            className="h-8 w-8 p-0"
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                          {actionMenus.has(anomaly.id) && (
-                            <div className="absolute right-0 mt-8 w-48 bg-white rounded-md shadow-lg z-10 border">
+                          <div className="flex items-center gap-1 relative z-10">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleActionMenu(anomaly.id)}
+                              className="h-8 w-8 p-0"
+                              data-anomaly-id={anomaly.id}
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                            {activeMenuId === anomaly.id && (
+                              <>
+                                {/* Backdrop to prevent interaction with elements behind */}
+                                <div 
+                                  className="fixed inset-0 z-[999998]"
+                                  style={{ 
+                                    position: 'fixed', 
+                                    top: 0, 
+                                    left: 0, 
+                                    right: 0, 
+                                    bottom: 0,
+                                    backgroundColor: 'rgba(0, 0, 0, 0.01)',
+                                    zIndex: 999998
+                                  }}
+                                  onClick={() => {
+                                    setActionMenus(new Set());
+                                    setActiveMenuId(null);
+                                  }}
+                                />
+                                {/* Dropdown */}
+                                <div 
+                                  key={`menu-${anomaly.id}`}
+                                  className="fixed w-48 bg-white rounded-md shadow-2xl z-[999999] border-2 border-gray-200" 
+                                  data-action-menu
+                                  style={{ 
+                                    position: 'fixed',
+                                    top: `${dropdownPosition[anomaly.id]?.top || 0}px`,
+                                    left: `${dropdownPosition[anomaly.id]?.left || 0}px`,
+                                    minWidth: '192px',
+                                    maxHeight: '300px',
+                                    overflowY: 'auto',
+                                    backgroundColor: 'white',
+                                    zIndex: 999999
+                                  }}
+                                >
                               <div className="py-1">
                                 <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'resolve')}
+                                  onClick={() => handleQuickAction(anomaly.id, 'new')}
                                   className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                                 >
                                   <AlertTriangle className="h-4 w-4 text-orange-600" />
@@ -1143,14 +1478,29 @@ export default function AnomaliesPage() {
                                   RPA Details
                                 </button>
                                 <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'delete')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    handleQuickAction(anomaly.id, 'delete');
+                                  }}
+                                  disabled={deletingAnomalies.has(anomaly.id)}
+                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
+                                  {deletingAnomalies.has(anomaly.id) ? (
+                                    <>
+                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
+                                      Deleting...
+                                    </>
+                                  ) : (
+                                    <>
+                                      <Trash2 className="h-4 w-4" />
+                                      Delete
+                                    </>
+                                  )}
                                 </button>
                               </div>
                             </div>
+                            </>
                           )}
                         </div>
                       </TableCell>
@@ -1158,6 +1508,7 @@ export default function AnomaliesPage() {
                   ))}
                 </TableBody>
               </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

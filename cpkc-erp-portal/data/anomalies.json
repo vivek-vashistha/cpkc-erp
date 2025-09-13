@@ -1,26 +1,144 @@
 [
   {
     "id": "anomaly_1757683666935_4c2y5npvm",
-    "waybill_id": "WB3006",
-    "car_id": "CPKC-1001",
-    "csn_id": "CSN-CPKC-1001-202509-A",
-    "type": "MISSING_STEP",
+    "waybill_id": "WB4001",
+    "car_id": "CPKC-2001",
+    "csn_id": "CSN-CPKC-2001-202509-A",
+    "type": "SEQUENCE_ERROR",
     "confidence": 0.95,
     "suggested_fix": {
       "actions": [
         {
-          "name": "INSERT_EVENT",
-          "args": [
-            { "key": "event_type", "value": "In Transit" }
-          ],
-          "rationale": "The sequence is missing the 'In Transit' event after 'Picked Up'."
+          "name": "REORDER_EVENTS",
+          "args": [],
+          "rationale": "The 'Picked Up' event occurred after 'In Transit'."
         }
       ]
     },
     "status": "NEW",
     "created_ts": "2025-09-12T13:27:46.935Z",
     "updated_ts": "2025-09-12T13:27:46.935Z",
-    "details": "The waybill events are missing the 'In Transit' step after 'Picked Up'.",
+    "details": "The 'Picked Up' event is out of sequence, occurring after 'In Transit'.",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvn",
+    "waybill_id": "WB4003",
+    "car_id": "CPKC-2001",
+    "csn_id": "CSN-CPKC-2001-202509-A",
+    "type": "MISSING_STEP",
+    "confidence": 0.9,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "INSERT_EVENT",
+          "args": [
+            {
+              "key": "event_type",
+              "value": "Closed"
+            }
+          ],
+          "rationale": "The 'Closed' event is missing after 'Delivered'."
+        }
+      ]
+    },
+    "status": "NEW",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "The sequence ends with 'Delivered' but lacks a 'Closed' event.",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvo",
+    "waybill_id": "WB4004",
+    "car_id": "CPKC-2001",
+    "csn_id": "CSN-CPKC-2001-202509-A",
+    "type": "TERMINAL_CONFLICT",
+    "confidence": 0.95,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "REVIEW_TERMINAL_STATE",
+          "args": [],
+          "rationale": "Both 'Delivered' and 'Cancelled' events are present, which is conflicting."
+        }
+      ]
+    },
+    "status": "NEW",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "The waybill has both 'Delivered' and 'Cancelled' events, which are mutually exclusive.",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvp",
+    "waybill_id": "WB4005",
+    "car_id": "CPKC-2001",
+    "csn_id": "CSN-CPKC-2001-202509-A",
+    "type": "MULTI_DELIVERED",
+    "confidence": 0.9,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "MERGE_DUPLICATE_EVENTS",
+          "args": [],
+          "rationale": "Multiple 'Delivered' events detected."
+        }
+      ]
+    },
+    "status": "NEW",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "There are multiple 'Delivered' events for this waybill.",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvq",
+    "waybill_id": "WB4006",
+    "car_id": "CPKC-2001",
+    "csn_id": "CSN-CPKC-2001-202509-A",
+    "type": "POST_TERMINAL_ACTIVITY",
+    "confidence": 0.95,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "TRIM_POST_TERMINAL_EVENTS",
+          "args": [],
+          "rationale": "Activity detected after 'Closed' event."
+        }
+      ]
+    },
+    "status": "NEW",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "An 'In Transit' event occurred after the 'Closed' event.",
+    "needs_confirmation": true
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvr",
+    "waybill_id": "WB4007",
+    "car_id": "CPKC-2001",
+    "csn_id": "CSN-CPKC-2001-202509-A",
+    "type": "UNKNOWN_EVENT_TYPE",
+    "confidence": 0.9,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "MAP_EVENT_TYPE",
+          "args": [
+            {
+              "key": "event_type",
+              "value": "Weighed"
+            }
+          ],
+          "rationale": "The event type 'Weighed' is not recognized."
+        }
+      ]
+    },
+    "status": "NEW",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "The event type 'Weighed' is not in the allowed list of event types.",
     "needs_confirmation": true
   },
   {
@@ -30,151 +148,73 @@
     "csn_id": "CSN-CPKC-1001-202509-A",
     "type": "CSNID_INCONSISTENT",
     "confidence": 0.87,
-    "suggested_fix": "SET_CSNID",
-    "status": "RESOLVED",
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "SET_CSNID",
+          "args": [
+            {
+              "key": "CSNID",
+              "value": "CSN-CPKC-1001-202509-A"
+            }
+          ],
+          "rationale": "The CSNId is inconsistent with the CarId. The CarId is 'CPKC-1001' and the CSNId is 'CSN-CPKC-1001-202509-A'."
+        }
+      ]
+    },
+    "status": "NEW",
     "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-12T14:27:01.806Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
     "details": "Multiple CSNId values across events; minority at 'At Border'",
     "needs_confirmation": true
   },
   {
-    "id": "anomaly_1757679391062_xoh8opcir",
-    "waybill_id": "WB4007",
-    "car_id": "CPKC-2001",
-    "csn_id": "CSN-CPKC-2001-202509-A",
-    "type": "UNKNOWN_EVENT_TYPE",
-    "confidence": 0.9,
-    "suggested_fix": "MAP_EVENT_TYPE",
-    "status": "NEW",
-    "created_ts": "2025-09-12T12:16:31.062Z",
-    "updated_ts": "2025-09-12T12:16:31.062Z",
-    "details": "Event type 'Weighed' is not in the allow-list",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757679391062_nwdch70jx",
-    "waybill_id": "WB4006",
-    "car_id": "CPKC-2001",
-    "csn_id": "CSN-CPKC-2001-202509-A",
-    "type": "POST_TERMINAL_ACTIVITY",
-    "confidence": 0.95,
-    "suggested_fix": "TRIM_POST_TERMINAL_EVENTS",
-    "status": "RESOLVED",
-    "created_ts": "2025-09-12T12:16:31.062Z",
-    "updated_ts": "2025-09-12T14:27:22.225Z",
-    "details": "Activity after terminal event 'Closed'",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757679391062_8l8e405cd",
-    "waybill_id": "WB4005",
-    "car_id": "CPKC-2001",
-    "csn_id": "CSN-CPKC-2001-202509-A",
-    "type": "MULTI_DELIVERED",
-    "confidence": 0.9,
-    "suggested_fix": "MERGE_DUPLICATE_EVENTS",
-    "status": "NEW",
-    "created_ts": "2025-09-12T12:16:31.062Z",
-    "updated_ts": "2025-09-12T12:16:31.062Z",
-    "details": "Multiple Delivered events detected",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757679230666_axl5mxjbm",
+    "id": "anomaly_1757683666935_4c2y5npvm",
     "waybill_id": "WB3000",
     "car_id": "CPKC-1001",
     "csn_id": "CSN-CPKC-1001-202509-A",
     "type": "MISSING_STEP",
-    "confidence": 1,
-    "suggested_fix": "INSERT_EVENT",
+    "confidence": 0.95,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "INSERT_EVENT",
+          "args": [
+            {
+              "key": "event_type",
+              "value": "Closed"
+            }
+          ],
+          "rationale": "The 'Closed' event is missing after 'Delivered'."
+        }
+      ]
+    },
     "status": "NEW",
-    "created_ts": "2025-09-12T12:13:50.666Z",
-    "updated_ts": "2025-09-12T12:13:50.666Z",
-    "details": "Missing 'Closed' event after 'Delivered'",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "The sequence ends with 'Delivered' but lacks a 'Closed' event.",
     "needs_confirmation": true
   },
   {
-    "id": "anomaly_1757679142568_q6vnlypod",
+    "id": "anomaly_1757683666935_4c2y5npvn",
     "waybill_id": "WB3005",
     "car_id": "CPKC-1001",
     "csn_id": "CSN-CPKC-1001-202509-A",
     "type": "SEQUENCE_ERROR",
-    "confidence": 0.95,
-    "suggested_fix": "REORDER_EVENTS",
-    "status": "NEW",
-    "created_ts": "2025-09-12T12:12:22.568Z",
-    "updated_ts": "2025-09-12T12:12:22.568Z",
-    "details": "Events are out of canonical order",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757679142568_dk7e4xi1b",
-    "waybill_id": "WB3005",
-    "car_id": "CPKC-1001",
-    "csn_id": "CSN-CPKC-1001-202509-A",
-    "type": "MISSING_STEP",
     "confidence": 0.9,
-    "suggested_fix": "INSERT_EVENT",
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "REORDER_EVENTS",
+          "args": [],
+          "rationale": "The 'Picked Up' event occurs after 'In Transit', which is out of sequence."
+        }
+      ]
+    },
     "status": "NEW",
-    "created_ts": "2025-09-12T12:12:22.568Z",
-    "updated_ts": "2025-09-12T12:12:22.568Z",
-    "details": "Missing 'Arrived' and 'Delivered' events",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "Events are out of order: 'Picked Up' follows 'In Transit'.",
     "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757678638757_2q9aoby5i",
-    "waybill_id": "WB4002",
-    "car_id": "CPKC-2001",
-    "csn_id": "CSN-CPKC-2001-202509-A",
-    "type": "SEQUENCE_ERROR",
-    "confidence": 0.95,
-    "suggested_fix": "REORDER_EVENTS",
-    "status": "NEW",
-    "created_ts": "2025-09-12T12:03:58.757Z",
-    "updated_ts": "2025-09-12T12:03:58.757Z",
-    "details": "Events are out of sequence: 'In Transit' before 'Created'",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757677606362_0lnpnre7l",
-    "waybill_id": "WB4001",
-    "car_id": "CPKC-2001",
-    "csn_id": "CSN-CPKC-2001-202509-A",
-    "type": "SEQUENCE_ERROR",
-    "confidence": 0.9,
-    "suggested_fix": "REORDER_EVENTS",
-    "status": "NEW",
-    "created_ts": "2025-09-12T11:46:46.362Z",
-    "updated_ts": "2025-09-12T11:46:46.362Z",
-    "details": "Events out of canonical order: In Transit before Picked Up",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757677606362_ehey9ijfj",
-    "waybill_id": "WB4004",
-    "car_id": "CPKC-2001",
-    "csn_id": "CSN-CPKC-2001-202509-A",
-    "type": "TERMINAL_CONFLICT",
-    "confidence": 0.95,
-    "suggested_fix": "REVIEW_TERMINAL_STATE",
-    "status": "NEW",
-    "created_ts": "2025-09-12T11:46:46.362Z",
-    "updated_ts": "2025-09-12T11:46:46.362Z",
-    "details": "Delivered and Cancelled both present",
-    "needs_confirmation": true
-  },
-  {
-    "id": "anomaly_1757671523727_3kthr8n6t",
-    "waybill_id": "WB3010",
-    "car_id": "CPKC-1001",
-    "csn_id": "CSN-CPKC-1001-202509-A",
-    "type": "MISSING_STEP",
-    "confidence": 0.8,
-    "suggested_fix": "Manual review required",
-    "status": "NEW",
-    "created_ts": "2025-09-12T10:05:23.727Z",
-    "updated_ts": "2025-09-12T10:05:23.727Z",
-    "details": "Missing 'In Transit', 'At Border', 'Arrived', 'Delivered', 'Closed' events",
-    "needs_confirmation": false
   }
 ]
