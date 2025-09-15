@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { apiService, type Anomaly, type SuggestedFix } from '@/lib/api';
+import { apiService, type Anomaly, type SuggestedFix, type RankedFix } from '@/lib/api';
 import { formatDate, getStatusColor, isRPAEligible, getRPAEligibilityReason } from '@/lib/utils';
 import { chatContextManager } from '@/lib/chatContext';
 import { Search, AlertTriangle, CheckCircle, XCircle, Eye, Settings, Trash2, MessageCircle, Bot, Zap, RefreshCw, MoreHorizontal, ChevronDown, ChevronRight } from 'lucide-react';
@@ -64,6 +64,30 @@ const getSuggestedFixDetails = (suggestedFix: string | SuggestedFix) => {
   }
   
   return suggestedFix || { actions: [] };
+};
+
+// Helper function to format ranked fixes display
+const formatRankedFixes = (rankedFixes: RankedFix[] | undefined): string => {
+  if (!rankedFixes || rankedFixes.length === 0) {
+    return 'No ranked fixes available';
+  }
+  
+  return rankedFixes.map(fix => fix.raw || fix.arm).join(', ');
+};
+
+// Helper function to get ranked fixes details for tooltip/expanded view
+const getRankedFixesDetails = (rankedFixes: RankedFix[] | undefined): string => {
+  if (!rankedFixes || rankedFixes.length === 0) {
+    return 'No ranked fixes available';
+  }
+  
+  return rankedFixes.map((fix, index) => {
+    const details = [`${index + 1}. ${fix.raw || fix.arm}`];
+    if (fix.params && Object.keys(fix.params).length > 0) {
+      details.push(`   Parameters: ${JSON.stringify(fix.params)}`);
+    }
+    return details.join('\n');
+  }).join('\n');
 };
 
 export default function AnomaliesPage() {
@@ -575,6 +599,7 @@ export default function AnomaliesPage() {
         type: anomaly.type,
         confidence: anomaly.confidence,
         suggested_fix: anomaly.suggested_fix || 'Manual review required',
+        ranked_fixes: anomaly.ranked_fixes || [],
         status: anomaly.status || 'NEW',
         created_ts: anomaly.created_ts || new Date().toISOString(),
         updated_ts: anomaly.updated_ts || new Date().toISOString(),
@@ -940,7 +965,7 @@ export default function AnomaliesPage() {
             <CardContent className="overflow-visible">
               <div className="overflow-x-auto">
               <div className="border border-gray-300 rounded-lg overflow-hidden min-w-max">
-                <table className="w-full border-collapse min-w-[2000px]">
+                <table className="w-full border-collapse min-w-[2400px]">
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="w-12 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">
@@ -957,6 +982,7 @@ export default function AnomaliesPage() {
                       <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Car ID</th>
                       <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">CSN ID</th>
                       <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Fix</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Ranked Fixes</th>
                       <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Confidence</th>
                       <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rationale</th>
                       <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">RPA Status</th>
@@ -999,6 +1025,11 @@ export default function AnomaliesPage() {
                             <Badge variant="outline" className="text-xs">
                               {formatSuggestedFix(anomaly.suggested_fix)}
                             </Badge>
+                          </td>
+                          <td className="w-48 border border-gray-300 px-4 py-3">
+                            <div className="text-xs text-gray-600" title={getRankedFixesDetails(anomaly.ranked_fixes)}>
+                              {formatRankedFixes(anomaly.ranked_fixes)}
+                            </div>
                           </td>
                           <td className="w-32 border border-gray-300 px-4 py-3">
                             <div className="flex items-center gap-2">
@@ -1092,7 +1123,7 @@ export default function AnomaliesPage() {
                         </tr>
                         {expandedRows.has(anomaly.id) && (
                           <tr>
-                            <td colSpan={12} className="border border-gray-300 bg-gray-50 p-4">
+                            <td colSpan={13} className="border border-gray-300 bg-gray-50 p-4">
                               <div className="space-y-3">
                                 <div className="grid grid-cols-2 gap-4">
                                   <div>
@@ -1133,6 +1164,31 @@ export default function AnomaliesPage() {
                                       <div><span className="font-medium">Needs Confirmation:</span> {anomaly.needs_confirmation ? 'Yes' : 'No'}</div>
                                     </div>
                                   </div>
+                                  <div>
+                                    <h4 className="font-medium text-sm text-gray-900 mb-2">Ranked Fixes</h4>
+                                    <div className="space-y-1 text-sm">
+                                      {anomaly.ranked_fixes && anomaly.ranked_fixes.length > 0 ? (
+                                        anomaly.ranked_fixes.map((fix, index) => (
+                                          <div key={index} className="ml-4 p-2 bg-blue-50 rounded border-l-2 border-blue-200">
+                                            <div className="font-medium text-blue-800">{index + 1}. {fix.raw || fix.arm}</div>
+                                            {fix.params && Object.keys(fix.params).length > 0 && (
+                                              <div className="text-xs text-gray-600 mt-1">
+                                                <span className="font-medium">Parameters:</span>
+                                                {Object.entries(fix.params).map(([key, value], paramIndex, array) => (
+                                                  <span key={paramIndex} className="ml-1">
+                                                    {key}: {JSON.stringify(value)}
+                                                    {paramIndex < array.length - 1 ? ', ' : ''}
+                                                  </span>
+                                                ))}
+                                              </div>
+                                            )}
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <div className="text-sm text-gray-500">No ranked fixes available</div>
+                                      )}
+                                    </div>
+                                  </div>
                                 </div>
                                 <div className="pt-2 border-t">
                                   <h4 className="font-medium text-sm text-gray-900 mb-2">Description</h4>
@@ -1163,7 +1219,7 @@ export default function AnomaliesPage() {
             <CardContent className="overflow-visible">
               <div className="overflow-x-auto">
               <div className="border border-gray-300 rounded-lg overflow-hidden min-w-max">
-                <table className="w-full border-collapse min-w-[2000px]">
+                <table className="w-full border-collapse min-w-[2400px]">
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="w-12 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">
@@ -1180,6 +1236,7 @@ export default function AnomaliesPage() {
                       <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Car ID</th>
                       <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">CSN ID</th>
                       <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Fix</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Ranked Fixes</th>
                       <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Confidence</th>
                       <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rationale</th>
                       <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">RPA Status</th>
@@ -1221,6 +1278,11 @@ export default function AnomaliesPage() {
                           <Badge variant="outline" className="text-xs">
                             {formatSuggestedFix(anomaly.suggested_fix)}
                           </Badge>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-4 py-3">
+                          <div className="text-xs text-gray-600" title={getRankedFixesDetails(anomaly.ranked_fixes)}>
+                            {formatRankedFixes(anomaly.ranked_fixes)}
+                          </div>
                         </td>
                         <td className="w-32 border border-gray-300 px-4 py-3">
                           <div className="flex items-center gap-2">
@@ -1332,7 +1394,7 @@ export default function AnomaliesPage() {
             <CardContent className="overflow-visible">
               <div className="overflow-x-auto">
               <div className="border border-gray-300 rounded-lg overflow-hidden min-w-max">
-                <table className="w-full border-collapse min-w-[2000px]">
+                <table className="w-full border-collapse min-w-[2400px]">
                   <thead className="bg-gray-100">
                     <tr>
                       <th className="w-12 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">
@@ -1349,6 +1411,7 @@ export default function AnomaliesPage() {
                       <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Car ID</th>
                       <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">CSN ID</th>
                       <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Fix</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Ranked Fixes</th>
                       <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Confidence</th>
                       <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rationale</th>
                       <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">RPA Status</th>
@@ -1390,6 +1453,11 @@ export default function AnomaliesPage() {
                           <Badge variant="outline" className="text-xs">
                             {formatSuggestedFix(anomaly.suggested_fix)}
                           </Badge>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-4 py-3">
+                          <div className="text-xs text-gray-600" title={getRankedFixesDetails(anomaly.ranked_fixes)}>
+                            {formatRankedFixes(anomaly.ranked_fixes)}
+                          </div>
                         </td>
                         <td className="w-32 border border-gray-300 px-4 py-3">
                           <div className="flex items-center gap-2">

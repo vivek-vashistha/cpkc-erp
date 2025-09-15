@@ -59,6 +59,12 @@ export interface SuggestedFix {
   actions: SuggestedFixAction[];
 }
 
+export interface RankedFix {
+  arm: string;
+  params?: Record<string, any>;
+  raw: string;
+}
+
 export interface Anomaly {
   id: string;
   waybill_id: string;
@@ -67,6 +73,7 @@ export interface Anomaly {
   type: string;
   confidence: number;
   suggested_fix: string | SuggestedFix;
+  ranked_fixes?: RankedFix[];
   status: 'NEW' | 'RESOLVED' | 'IGNORED';
   created_ts: string;
   updated_ts: string;
