@@ -31,7 +31,7 @@ from langchain_core.messages import SystemMessage, HumanMessage, AIMessage, Tool
 from actions import canonicalize
 from bandit import FixBandit
 from learn_io import log_anomaly, log_feedback, log_outcome
-from retrieve import retrieve_similar
+from retriever import retrieve_similar
 
 # -----------------------------
 # Env
@@ -218,44 +218,80 @@ def build_features(events: List[dict]) -> Dict[str, Any]:
 # -----------------------------
 bandit = FixBandit()
 
-@tool
-def propose_ranked_fixes_tool(waybill_id: str, anomaly_type: str, lane_key: str, commodity: str,
-                              llm_suggestions: Optional[List[str]] = None) -> Dict[str, Any]:
-    """Rank LLM-suggested fixes using learned bandit + return few similar past cases.
-    Provide llm_suggestions as a short list of strings (e.g., ["Request B13A", "Escalate to yard ops"]).
-    Returns: {anomaly_id, ranked, few_shots}
-    """
-    # 1) fetch events & derive context/features
-    ev_resp = get_events(waybill_id)
-    events = ev_resp.get("events") or ev_resp.get("data") or ev_resp
-    if not isinstance(events, list):
-        events = events.get("items", []) if isinstance(events, dict) else []
+# @tool
+# def propose_ranked_fixes_tool(waybill_id: str, anomaly_type: str, lane_key: str, commodity: str,
+#                               llm_suggestions: Optional[List[str]] = None) -> Dict[str, Any]:
+#     """Rank LLM-suggested fixes using learned bandit + return few similar past cases.
+#     Provide llm_suggestions as a short list of strings (e.g., ["Request B13A", "Escalate to yard ops"]).
+#     Returns: {anomaly_id, ranked, few_shots}
+#     """
+#     # 1) fetch events & derive context/features
+#     ev_resp = get_events(waybill_id)
+#     events = ev_resp.get("events") or ev_resp.get("data") or ev_resp
+#     if not isinstance(events, list):
+#         events = events.get("items", []) if isinstance(events, dict) else []
 
+#     ctx = {"anomaly_type": anomaly_type, "lane_key": lane_key, "commodity": commodity}
+#     feats = build_features(events)
+
+#     # 2) retrieve a few similar cases for the LLM to show as examples
+#     shots = retrieve_similar(ctx, feats, k=4)
+
+#     # 3) canonicalize and rank (require some suggestions)
+#     suggestions = llm_suggestions or []
+#     arms = canonicalize(suggestions)
+#     if not arms:
+#         # if LLM passed nothing, fallback to a minimal heuristic menu
+#         arms = canonicalize(["Escalate to yard ops", "Request B13A", "Notify customer via portal"])
+
+#     ranked = bandit.select(ctx, arms)
+
+#     # 4) persist a compact anomaly hypothesis so it can learn later
+#     anomaly_id = f"A-{int(time.time()*1000)}"
+#     log_anomaly({
+#         "anomaly_id": anomaly_id,
+#         "bucket": f'{ctx["anomaly_type"]}|{ctx["lane_key"]}|{ctx["commodity"]}',
+#         "ctx": ctx,
+#         "features": feats,
+#         "proposed_arms": ranked[:3]
+#     })
+
+#     return {"anomaly_id": anomaly_id, "ranked": ranked, "few_shots": shots}
+
+
+@tool
+def propose_ranked_fixes_tool(waybill_id: str,
+                              anomaly_type: str,
+                              lane_key: Optional[str] = None,
+                              commodity: Optional[str] = None,
+                              llm_suggestions: Optional[List[str]] = None) -> Dict[str, Any]:
+    """Rank LLM-suggested fixes using learned bandit + return few similar past cases."""
+    # --- NEW: auto-fill lane/commodity if not provided ---
+    if lane_key is None or commodity is None:
+        wb = get_waybills(id=waybill_id)
+        item = (wb.get("items") or [{}])[0]
+        origin = item.get("origin_location", "UNKNOWN")
+        dest   = item.get("destination_location", "UNKNOWN")
+        lane_key = lane_key or f"{origin}->{dest}"
+        commodity = commodity or item.get("commodity", "UNKNOWN")
+
+    # existing logic...
+    ev_resp = get_events(waybill_id)
+    events = ev_resp.get("items") or ev_resp.get("events") or ev_resp.get("data") or ev_resp
+    if not isinstance(events, list) and isinstance(events, dict):
+        events = events.get("items", [])
     ctx = {"anomaly_type": anomaly_type, "lane_key": lane_key, "commodity": commodity}
     feats = build_features(events)
-
-    # 2) retrieve a few similar cases for the LLM to show as examples
     shots = retrieve_similar(ctx, feats, k=4)
-
-    # 3) canonicalize and rank (require some suggestions)
     suggestions = llm_suggestions or []
-    arms = canonicalize(suggestions)
-    if not arms:
-        # if LLM passed nothing, fallback to a minimal heuristic menu
-        arms = canonicalize(["Escalate to yard ops", "Request B13A", "Notify customer via portal"])
-
+    arms = canonicalize(suggestions) or canonicalize(["Escalate to yard ops", "Request B13A", "Notify customer via portal"])
     ranked = bandit.select(ctx, arms)
-
-    # 4) persist a compact anomaly hypothesis so it can learn later
     anomaly_id = f"A-{int(time.time()*1000)}"
     log_anomaly({
         "anomaly_id": anomaly_id,
         "bucket": f'{ctx["anomaly_type"]}|{ctx["lane_key"]}|{ctx["commodity"]}',
-        "ctx": ctx,
-        "features": feats,
-        "proposed_arms": ranked[:3]
+        "ctx": ctx, "features": feats, "proposed_arms": ranked[:3]
     })
-
     return {"anomaly_id": anomaly_id, "ranked": ranked, "few_shots": shots}
 
 
@@ -316,9 +352,55 @@ TOOLS = {
 # -----------------------------
 # System prompt & agent
 # -----------------------------
-from others.prompts.system_prompt_13_09_2025 import SYSTEM_13_09_2025 as SYSTEM
+# from others.prompts.system_prompt_13_09_2025 import SYSTEM_13_09_2025 as SYSTEM
+# from others.prompts.system_prompt_15_09_2025 import SYSTEM_15_09_2025 as SYSTEM
+
+from others.prompts.system_prompt_15_09_2025 import SYSTEM_15_09_2025 as SYSTEM
 
 llm = ChatOpenAI(model=OPENAI_MODEL, temperature=0).bind_tools(list(TOOLS.values()))
+
+import re
+import json as _json
+
+WB_RE = re.compile(r"\bWB\d+\b", re.IGNORECASE)
+
+def _content_to_text(msg_content) -> str:
+    """Normalize LangGraph message content (str | list | dict) → plain text."""
+    if isinstance(msg_content, str):
+        return msg_content
+    if isinstance(msg_content, list):
+        parts = []
+        for p in msg_content:
+            if isinstance(p, str):
+                parts.append(p)
+            elif isinstance(p, dict):
+                t = p.get("text") or p.get("content") or ""
+                parts.append(t if isinstance(t, str) else _json.dumps(t))
+            else:
+                parts.append(str(p))
+        return " ".join(parts).strip()
+    if isinstance(msg_content, dict):
+        t = msg_content.get("text") or msg_content.get("content") or ""
+        return t if isinstance(t, str) else _json.dumps(t)
+    return str(msg_content)
+
+def _massage_user_message(msg_content) -> str:
+    """If user sent just a waybill (or a sentence containing one), coerce an instruction that triggers the tool path."""
+    raw = _content_to_text(msg_content)
+    m = WB_RE.search(raw or "")
+    if not m:
+        return raw or ""
+
+    wb = m.group(0).upper()
+    return (
+        f"Analyze waybill {wb} for anomalies using get_events_tool and get_waybills_tool. "
+        f"If any anomaly is suspected (e.g., missing steps, late segments, customs holds), "
+        f"generate 3–5 short candidate fix phrases and then CALL propose_ranked_fixes_tool "
+        f"with: waybill_id={wb}, anomaly_type (string), lane_key (origin->dest), commodity, "
+        f"and llm_suggestions (list of your fix phrases). "
+        f"Return only a JSON array of anomalies. Also include the anomaly_id and ranked fixes from the tool."
+    )
+
 
 
 def agent_node(state: MessagesState) -> dict:
@@ -330,6 +412,9 @@ def agent_node(state: MessagesState) -> dict:
     print("\n[AGENT] ====== Thought / Reply ======")
     if len(messages) > 1 and isinstance(messages[-1], HumanMessage):
         print(f"[AGENT] User: {messages[-1].content}")
+
+    if len(messages) > 0 and isinstance(messages[-1], HumanMessage):
+        messages[-1] = HumanMessage(content=_massage_user_message(messages[-1].content))
 
     resp = llm.invoke(messages)
 
