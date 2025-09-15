@@ -1152,64 +1152,68 @@ export default function AnomaliesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="overflow-visible">
-              <div className="overflow-visible">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={resolvedAnomalies.length > 0 && resolvedAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
-                        onChange={() => handleSelectAllAnomalies(resolvedAnomalies)}
-                        className="rounded"
-                      />
-                    </TableHead>
-                    <TableHead>Anomaly</TableHead>
-                    <TableHead>Fix & Confidence</TableHead>
-                    <TableHead>RPA Status</TableHead>
-                    <TableHead>Resolved</TableHead>
-                    <TableHead className="w-12">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {resolvedAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id} className="hover:bg-gray-50 relative">
-                      <TableCell>
+              <div className="overflow-x-auto">
+              <div className="border border-gray-300 rounded-lg overflow-hidden min-w-max">
+                <table className="w-full border-collapse min-w-[2000px]">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="w-12 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">
                         <input
                           type="checkbox"
-                          checked={selectedAnomalies.has(anomaly.id)}
-                          onChange={() => handleSelectAnomaly(anomaly.id)}
+                          checked={resolvedAnomalies.length > 0 && resolvedAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
+                          onChange={() => handleSelectAllAnomalies(resolvedAnomalies)}
                           className="rounded"
                         />
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge className="bg-green-100 text-green-800 text-xs">
-                              {anomaly.type}
-                            </Badge>
-                            <span className="font-medium text-sm">{anomaly.waybill_id}</span>
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {anomaly.details || 'No details available'}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>Car: {anomaly.car_id}</span>
-                            <span>•</span>
-                            <span className="font-mono">CSN: {anomaly.csn_id}</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-2">
-                          <div 
-                            className="inline-block"
-                            title={getSuggestedFixRationale(anomaly.suggested_fix)}
-                          >
-                            <Badge variant="outline" className="text-xs cursor-help">
-                              {formatSuggestedFix(anomaly.suggested_fix)}
+                      </th>
+                      <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Waybill ID</th>
+                      <th className="w-44 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                      <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Details</th>
+                      <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Car ID</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">CSN ID</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Fix</th>
+                      <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Confidence</th>
+                      <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rationale</th>
+                      <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">RPA Status</th>
+                      <th className="w-36 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Resolved</th>
+                      <th className="w-48 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {resolvedAnomalies.map((anomaly) => (
+                      <tr key={anomaly.id} className="hover:bg-blue-50 relative">
+                        <td className="border border-gray-300 px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedAnomalies.has(anomaly.id)}
+                            onChange={() => handleSelectAnomaly(anomaly.id)}
+                            className="rounded"
+                          />
+                        </td>
+                        <td className="w-32 border border-gray-300 px-4 py-3">
+                          <span className="font-medium text-sm text-gray-900">{anomaly.waybill_id}</span>
+                        </td>
+                        <td className="w-44 border border-gray-300 px-4 py-3">
+                          <Badge className="bg-green-100 text-green-800 text-xs">
+                            {anomaly.type}
                           </Badge>
-                          </div>
+                        </td>
+                        <td className="w-80 border border-gray-300 px-4 py-3">
+                          <span className="text-sm text-gray-600">
+                            {anomaly.details || 'No details available'}
+                          </span>
+                        </td>
+                        <td className="w-40 border border-gray-300 px-4 py-3">
+                          <span className="text-sm text-gray-700">{anomaly.car_id}</span>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-4 py-3">
+                          <span className="text-sm font-mono text-gray-700">{anomaly.csn_id}</span>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-4 py-3">
+                          <Badge variant="outline" className="text-xs">
+                            {formatSuggestedFix(anomaly.suggested_fix)}
+                          </Badge>
+                        </td>
+                        <td className="w-32 border border-gray-300 px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-full h-1.5">
                               <div 
@@ -1221,127 +1225,80 @@ export default function AnomaliesPage() {
                               {(anomaly.confidence * 100).toFixed(0)}%
                             </span>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <RPAStatus 
-                          anomaly={anomaly}
-                          onRetry={handleRpaRetry}
-                          onCancel={handleRpaCancel}
-                          onViewDetails={handleViewRpaDetails}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">
-                          {formatDate(anomaly.updated_ts)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
+                        </td>
+                        <td className="w-80 border border-gray-300 px-4 py-3">
+                          <span className="text-xs text-gray-500">
+                            {getRationaleOnly(anomaly.suggested_fix)}
+                          </span>
+                        </td>
+                        <td className="w-40 border border-gray-300 px-4 py-3">
+                          <RPAStatus 
+                            anomaly={anomaly}
+                            onRetry={handleRpaRetry}
+                            onCancel={handleRpaCancel}
+                            onViewDetails={handleViewRpaDetails}
+                          />
+                        </td>
+                        <td className="w-36 border border-gray-300 px-4 py-3">
+                          <span className="text-sm text-gray-600">
+                            {formatDate(anomaly.updated_ts)}
+                          </span>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-3 py-2">
                           <div className="flex items-center gap-1 relative z-10">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleActionMenu(anomaly.id)}
-                            className="h-8 w-8 p-0"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'accept')}
+                              className="h-8 w-8 p-0"
+                              title="Accept"
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'reject')}
+                              className="h-8 w-8 p-0"
+                              title="Reject"
+                            >
+                              <XCircle className="h-4 w-4 text-red-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'modify')}
+                              className="h-8 w-8 p-0"
+                              title="Modify"
+                            >
+                              <Settings className="h-4 w-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'escalate')}
+                              className="h-8 w-8 p-0"
+                              title="Escalate"
+                            >
+                              <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleActionMenu(anomaly.id)}
+                              className="h-8 w-8 p-0"
                               data-anomaly-id={anomaly.id}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                            {activeMenuId === anomaly.id && (
-                              <>
-                                {/* Backdrop to prevent interaction with elements behind */}
-                                <div 
-                                  className="fixed inset-0 z-[999998]"
-                                  style={{ 
-                                    position: 'fixed', 
-                                    top: 0, 
-                                    left: 0, 
-                                    right: 0, 
-                                    bottom: 0,
-                                    backgroundColor: 'rgba(0, 0, 0, 0.01)',
-                                    zIndex: 999998
-                                  }}
-                                  onClick={() => {
-                                    setActionMenus(new Set());
-                                    setActiveMenuId(null);
-                                  }}
-                                />
-                                {/* Dropdown */}
-                                <div 
-                                  key={`menu-${anomaly.id}`}
-                                  className="fixed w-48 bg-white rounded-md shadow-2xl z-[999999] border-2 border-gray-200" 
-                                  data-action-menu
-                                  style={{ 
-                                    position: 'fixed',
-                                    top: `${dropdownPosition[anomaly.id]?.top || 0}px`,
-                                    left: `${dropdownPosition[anomaly.id]?.left || 0}px`,
-                                    minWidth: '192px',
-                                    maxHeight: '300px',
-                                    overflowY: 'auto',
-                                    backgroundColor: 'white',
-                                    zIndex: 999999
-                                  }}
-                                >
-                              <div className="py-1">
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'new')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                  Move to New
-                                </button>
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'ignore')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <XCircle className="h-4 w-4 text-gray-600" />
-                                  Move to Ignored
-                                </button>
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'chat')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <MessageCircle className="h-4 w-4 text-blue-600" />
-                                  Chat about this
-                                </button>
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'rpa')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <Bot className="h-4 w-4 text-purple-600" />
-                                  RPA Details
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleQuickAction(anomaly.id, 'delete');
-                                  }}
-                                  disabled={deletingAnomalies.has(anomaly.id)}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {deletingAnomalies.has(anomaly.id) ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                      Deleting...
-                                    </>
-                                  ) : (
-                                    <>
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                              title="More Actions"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               </div>
             </CardContent>
           </Card>
@@ -1356,64 +1313,68 @@ export default function AnomaliesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="overflow-visible">
-              <div className="overflow-visible">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={ignoredAnomalies.length > 0 && ignoredAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
-                        onChange={() => handleSelectAllAnomalies(ignoredAnomalies)}
-                        className="rounded"
-                      />
-                    </TableHead>
-                    <TableHead>Anomaly</TableHead>
-                    <TableHead>Fix & Confidence</TableHead>
-                    <TableHead>RPA Status</TableHead>
-                    <TableHead>Ignored</TableHead>
-                    <TableHead className="w-12">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {ignoredAnomalies.map((anomaly) => (
-                    <TableRow key={anomaly.id} className="hover:bg-gray-50 relative">
-                      <TableCell>
+              <div className="overflow-x-auto">
+              <div className="border border-gray-300 rounded-lg overflow-hidden min-w-max">
+                <table className="w-full border-collapse min-w-[2000px]">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="w-12 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">
                         <input
                           type="checkbox"
-                          checked={selectedAnomalies.has(anomaly.id)}
-                          onChange={() => handleSelectAnomaly(anomaly.id)}
+                          checked={ignoredAnomalies.length > 0 && ignoredAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
+                          onChange={() => handleSelectAllAnomalies(ignoredAnomalies)}
                           className="rounded"
                         />
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-2">
-                            <Badge variant="secondary" className="text-xs">
-                              {anomaly.type}
-                            </Badge>
-                            <span className="font-medium text-sm">{anomaly.waybill_id}</span>
-                          </div>
-                          <div className="text-xs text-gray-600">
-                            {anomaly.details || 'No details available'}
-                          </div>
-                          <div className="flex items-center gap-2 text-xs text-gray-500">
-                            <span>Car: {anomaly.car_id}</span>
-                            <span>•</span>
-                            <span className="font-mono">CSN: {anomaly.csn_id}</span>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <div className="space-y-2">
-                          <div 
-                            className="inline-block"
-                            title={getSuggestedFixRationale(anomaly.suggested_fix)}
-                          >
-                            <Badge variant="outline" className="text-xs cursor-help">
-                              {formatSuggestedFix(anomaly.suggested_fix)}
+                      </th>
+                      <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Waybill ID</th>
+                      <th className="w-44 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                      <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Details</th>
+                      <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Car ID</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">CSN ID</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Fix</th>
+                      <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Confidence</th>
+                      <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rationale</th>
+                      <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">RPA Status</th>
+                      <th className="w-36 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Ignored</th>
+                      <th className="w-48 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {ignoredAnomalies.map((anomaly) => (
+                      <tr key={anomaly.id} className="hover:bg-blue-50 relative">
+                        <td className="border border-gray-300 px-3 py-2">
+                          <input
+                            type="checkbox"
+                            checked={selectedAnomalies.has(anomaly.id)}
+                            onChange={() => handleSelectAnomaly(anomaly.id)}
+                            className="rounded"
+                          />
+                        </td>
+                        <td className="w-32 border border-gray-300 px-4 py-3">
+                          <span className="font-medium text-sm text-gray-900">{anomaly.waybill_id}</span>
+                        </td>
+                        <td className="w-44 border border-gray-300 px-4 py-3">
+                          <Badge variant="secondary" className="text-xs">
+                            {anomaly.type}
                           </Badge>
-                          </div>
+                        </td>
+                        <td className="w-80 border border-gray-300 px-4 py-3">
+                          <span className="text-sm text-gray-600">
+                            {anomaly.details || 'No details available'}
+                          </span>
+                        </td>
+                        <td className="w-40 border border-gray-300 px-4 py-3">
+                          <span className="text-sm text-gray-700">{anomaly.car_id}</span>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-4 py-3">
+                          <span className="text-sm font-mono text-gray-700">{anomaly.csn_id}</span>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-4 py-3">
+                          <Badge variant="outline" className="text-xs">
+                            {formatSuggestedFix(anomaly.suggested_fix)}
+                          </Badge>
+                        </td>
+                        <td className="w-32 border border-gray-300 px-4 py-3">
                           <div className="flex items-center gap-2">
                             <div className="w-16 bg-gray-200 rounded-full h-1.5">
                               <div 
@@ -1425,127 +1386,80 @@ export default function AnomaliesPage() {
                               {(anomaly.confidence * 100).toFixed(0)}%
                             </span>
                           </div>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <RPAStatus 
-                          anomaly={anomaly}
-                          onRetry={handleRpaRetry}
-                          onCancel={handleRpaCancel}
-                          onViewDetails={handleViewRpaDetails}
-                        />
-                      </TableCell>
-                      <TableCell>
-                        <span className="text-sm text-gray-600">
-                          {formatDate(anomaly.updated_ts)}
-                        </span>
-                      </TableCell>
-                      <TableCell>
+                        </td>
+                        <td className="w-80 border border-gray-300 px-4 py-3">
+                          <span className="text-xs text-gray-500">
+                            {getRationaleOnly(anomaly.suggested_fix)}
+                          </span>
+                        </td>
+                        <td className="w-40 border border-gray-300 px-4 py-3">
+                          <RPAStatus 
+                            anomaly={anomaly}
+                            onRetry={handleRpaRetry}
+                            onCancel={handleRpaCancel}
+                            onViewDetails={handleViewRpaDetails}
+                          />
+                        </td>
+                        <td className="w-36 border border-gray-300 px-4 py-3">
+                          <span className="text-sm text-gray-600">
+                            {formatDate(anomaly.updated_ts)}
+                          </span>
+                        </td>
+                        <td className="w-48 border border-gray-300 px-3 py-2">
                           <div className="flex items-center gap-1 relative z-10">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => toggleActionMenu(anomaly.id)}
-                            className="h-8 w-8 p-0"
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'accept')}
+                              className="h-8 w-8 p-0"
+                              title="Accept"
+                            >
+                              <CheckCircle className="h-4 w-4 text-green-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'reject')}
+                              className="h-8 w-8 p-0"
+                              title="Reject"
+                            >
+                              <XCircle className="h-4 w-4 text-red-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'modify')}
+                              className="h-8 w-8 p-0"
+                              title="Modify"
+                            >
+                              <Settings className="h-4 w-4 text-blue-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleQuickAction(anomaly.id, 'escalate')}
+                              className="h-8 w-8 p-0"
+                              title="Escalate"
+                            >
+                              <AlertTriangle className="h-4 w-4 text-orange-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => toggleActionMenu(anomaly.id)}
+                              className="h-8 w-8 p-0"
                               data-anomaly-id={anomaly.id}
-                          >
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                            {activeMenuId === anomaly.id && (
-                              <>
-                                {/* Backdrop to prevent interaction with elements behind */}
-                                <div 
-                                  className="fixed inset-0 z-[999998]"
-                                  style={{ 
-                                    position: 'fixed', 
-                                    top: 0, 
-                                    left: 0, 
-                                    right: 0, 
-                                    bottom: 0,
-                                    backgroundColor: 'rgba(0, 0, 0, 0.01)',
-                                    zIndex: 999998
-                                  }}
-                                  onClick={() => {
-                                    setActionMenus(new Set());
-                                    setActiveMenuId(null);
-                                  }}
-                                />
-                                {/* Dropdown */}
-                                <div 
-                                  key={`menu-${anomaly.id}`}
-                                  className="fixed w-48 bg-white rounded-md shadow-2xl z-[999999] border-2 border-gray-200" 
-                                  data-action-menu
-                                  style={{ 
-                                    position: 'fixed',
-                                    top: `${dropdownPosition[anomaly.id]?.top || 0}px`,
-                                    left: `${dropdownPosition[anomaly.id]?.left || 0}px`,
-                                    minWidth: '192px',
-                                    maxHeight: '300px',
-                                    overflowY: 'auto',
-                                    backgroundColor: 'white',
-                                    zIndex: 999999
-                                  }}
-                                >
-                              <div className="py-1">
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'new')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <AlertTriangle className="h-4 w-4 text-orange-600" />
-                                  Move to New
-                                </button>
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'ignore')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <CheckCircle className="h-4 w-4 text-green-600" />
-                                  Move to Resolved
-                                </button>
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'chat')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <MessageCircle className="h-4 w-4 text-blue-600" />
-                                  Chat about this
-                                </button>
-                                <button
-                                  onClick={() => handleQuickAction(anomaly.id, 'rpa')}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                                >
-                                  <Bot className="h-4 w-4 text-purple-600" />
-                                  RPA Details
-                                </button>
-                                <button
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    handleQuickAction(anomaly.id, 'delete');
-                                  }}
-                                  disabled={deletingAnomalies.has(anomaly.id)}
-                                  className="flex items-center gap-2 w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  {deletingAnomalies.has(anomaly.id) ? (
-                                    <>
-                                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-red-600"></div>
-                                      Deleting...
-                                    </>
-                                  ) : (
-                                    <>
-                                  <Trash2 className="h-4 w-4" />
-                                  Delete
-                                    </>
-                                  )}
-                                </button>
-                              </div>
-                            </div>
-                            </>
-                          )}
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
+                              title="More Actions"
+                            >
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               </div>
             </CardContent>
           </Card>
