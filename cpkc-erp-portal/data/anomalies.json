@@ -1,26 +1,54 @@
 [
   {
-    "id": "anomaly_1757922443216_70fc5c75",
+    "id": "anomaly_1757683666935_4c2y5npvm",
     "waybill_id": "WB4004",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
     "type": "TERMINAL_CONFLICT",
-    "confidence": 0.95,
+    "confidence": 1,
     "suggested_fix": {
       "actions": [
         {
           "name": "REVIEW_TERMINAL_STATE",
           "args": [],
-          "rationale": "The waybill has both 'Delivered' and 'Cancelled' events, which are conflicting terminal states."
+          "rationale": "The waybill has both 'Delivered' and 'Cancelled' events, which are conflicting terminal states. Manual review is required to determine the correct terminal state."
         }
       ]
     },
     "status": "NEW",
     "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-15T07:52:45.125Z",
-    "details": "Waybill WB4004 has both 'Delivered' and 'Cancelled' events, which are mutually exclusive terminal events.",
+    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "details": "The waybill WB4004 has both 'Delivered' and 'Cancelled' events, which are mutually exclusive terminal events.",
     "needs_confirmation": true,
     "rpa_status": "Manual Review Required"
+  },
+  {
+    "id": "anomaly_1757683666935_4c2y5npvm",
+    "waybill_id": "WB3000",
+    "car_id": "CPKC-1001",
+    "csn_id": "CSN-CPKC-1001-202509-A",
+    "type": "MISSING_STEP",
+    "confidence": 1,
+    "suggested_fix": {
+      "actions": [
+        {
+          "name": "INSERT_EVENT",
+          "args": [
+            {
+              "key": "event_type",
+              "value": "Closed"
+            }
+          ],
+          "rationale": "The sequence ends with 'Delivered' but lacks a 'Closed' event, which is required to complete the sequence."
+        }
+      ]
+    },
+    "status": "RESOLVED",
+    "created_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-15T08:43:49.078Z",
+    "details": "The waybill sequence is missing the 'Closed' event after 'Delivered'.",
+    "needs_confirmation": true,
+    "rpa_status": "Auto Fix"
   },
   {
     "id": "anomaly_1757922443216_498ee743",
@@ -61,9 +89,9 @@
         }
       ]
     },
-    "status": "RESOLVED",
+    "status": "NEW",
     "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-15T07:52:58.198Z",
+    "updated_ts": "2025-09-15T08:42:43.044Z",
     "details": "Waybill WB4006 has 'In Transit' event after 'Closed'.",
     "needs_confirmation": true,
     "rpa_status": "Manual Review Required"
@@ -126,34 +154,6 @@
     "csn_id": "CSN-CPKC-2001-202509-A",
     "type": "MISSING_STEP",
     "confidence": 0.9,
-    "suggested_fix": {
-      "actions": [
-        {
-          "name": "INSERT_EVENT",
-          "args": [
-            {
-              "key": "event_type",
-              "value": "Closed"
-            }
-          ],
-          "rationale": "The 'Closed' event is missing after 'Delivered'."
-        }
-      ]
-    },
-    "status": "NEW",
-    "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-12T13:27:46.935Z",
-    "details": "The sequence is missing the 'Closed' event after 'Delivered'.",
-    "needs_confirmation": true,
-    "rpa_status": "Auto Fix"
-  },
-  {
-    "id": "anomaly_1757922443216_3f26637a",
-    "waybill_id": "WB3000",
-    "car_id": "CPKC-1001",
-    "csn_id": "CSN-CPKC-1001-202509-A",
-    "type": "MISSING_STEP",
-    "confidence": 0.95,
     "suggested_fix": {
       "actions": [
         {
