@@ -42,6 +42,21 @@ const getSuggestedFixRationale = (suggestedFix: string | SuggestedFix): string =
   return 'Manual review required';
 };
 
+// Helper function to get only the rationale part (after colon)
+const getRationaleOnly = (suggestedFix: string | SuggestedFix): string => {
+  if (typeof suggestedFix === 'string') {
+    return suggestedFix;
+  }
+  
+  if (suggestedFix && suggestedFix.actions && suggestedFix.actions.length > 0) {
+    return suggestedFix.actions.map(action => 
+      action.rationale || 'No rationale available'
+    ).join('\n');
+  }
+  
+  return 'Manual review required';
+};
+
 // Helper function to get suggested fix details for expanded view
 const getSuggestedFixDetails = (suggestedFix: string | SuggestedFix) => {
   if (typeof suggestedFix === 'string') {
@@ -657,106 +672,26 @@ export default function AnomaliesPage() {
                   
                   return (
                     <>
-                      {/* For NEW anomalies */}
-                      {!isResolved && !isIgnored && (
-                        <>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'accept')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'reject')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <XCircle className="h-4 w-4 text-red-600" />
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'modify')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <Settings className="h-4 w-4 text-blue-600" />
-                            Modify
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'escalate')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <AlertTriangle className="h-4 w-4 text-orange-600" />
-                            Escalate
-                          </button>
-                        </>
-                      )}
-                      
-                      {/* For RESOLVED anomalies */}
+                      {/* For RESOLVED anomalies - only show Move to New */}
                       {isResolved && (
-                        <>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'new')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <AlertTriangle className="h-4 w-4 text-orange-600" />
-                            Move to New
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'reject')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <XCircle className="h-4 w-4 text-red-600" />
-                            Reject
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'modify')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <Settings className="h-4 w-4 text-blue-600" />
-                            Modify
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'escalate')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <AlertTriangle className="h-4 w-4 text-orange-600" />
-                            Escalate
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleQuickAction(anomaly.id, 'new')}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <AlertTriangle className="h-4 w-4 text-orange-600" />
+                          Move to New
+                        </button>
                       )}
                       
-                      {/* For IGNORED anomalies */}
+                      {/* For IGNORED anomalies - only show Move to New */}
                       {isIgnored && (
-                        <>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'new')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <AlertTriangle className="h-4 w-4 text-orange-600" />
-                            Move to New
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'accept')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <CheckCircle className="h-4 w-4 text-green-600" />
-                            Accept
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'modify')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <Settings className="h-4 w-4 text-blue-600" />
-                            Modify
-                          </button>
-                          <button
-                            onClick={() => handleQuickAction(anomaly.id, 'escalate')}
-                            className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                          >
-                            <AlertTriangle className="h-4 w-4 text-orange-600" />
-                            Escalate
-                          </button>
-                        </>
+                        <button
+                          onClick={() => handleQuickAction(anomaly.id, 'new')}
+                          className="flex items-center gap-2 w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          <AlertTriangle className="h-4 w-4 text-orange-600" />
+                          Move to New
+                        </button>
                       )}
                       
                       {/* Common buttons for all statuses */}
@@ -1002,65 +937,69 @@ export default function AnomaliesPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="overflow-visible">
-              <div className="overflow-visible">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-12">
-                      <input
-                        type="checkbox"
-                        checked={newAnomalies.length > 0 && newAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
-                        onChange={() => handleSelectAllAnomalies(newAnomalies)}
-                        className="rounded"
-                      />
-                    </TableHead>
-                    <TableHead>Anomaly</TableHead>
-                    <TableHead>Fix & Confidence</TableHead>
-                    <TableHead>RPA Status</TableHead>
-                    <TableHead>Created</TableHead>
-                    <TableHead className="w-12">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {newAnomalies.map((anomaly) => (
-                    <>
-                      <TableRow key={anomaly.id} className="hover:bg-gray-50 relative">
-                        <TableCell>
-                          <input
-                            type="checkbox"
-                            checked={selectedAnomalies.has(anomaly.id)}
-                            onChange={() => handleSelectAnomaly(anomaly.id)}
-                            className="rounded"
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Badge variant="destructive" className="text-xs">
-                                {anomaly.type}
-                              </Badge>
-                              <span className="font-medium text-sm">{anomaly.waybill_id}</span>
-                            </div>
-                            <div className="text-xs text-gray-600">
-                              {anomaly.details || 'No details available'}
-                            </div>
-                            <div className="flex items-center gap-2 text-xs text-gray-500">
-                              <span>Car: {anomaly.car_id}</span>
-                              <span>•</span>
-                              <span className="font-mono">CSN: {anomaly.csn_id}</span>
-                            </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <div className="space-y-2">
-                            <div 
-                              className="inline-block"
-                              title={getSuggestedFixRationale(anomaly.suggested_fix)}
-                            >
-                              <Badge variant="outline" className="text-xs cursor-help">
-                                {formatSuggestedFix(anomaly.suggested_fix)}
+              <div className="overflow-x-auto">
+              <div className="border border-gray-300 rounded-lg overflow-hidden min-w-max">
+                <table className="w-full border-collapse min-w-[2000px]">
+                  <thead className="bg-gray-100">
+                    <tr>
+                      <th className="w-12 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={newAnomalies.length > 0 && newAnomalies.every(anomaly => selectedAnomalies.has(anomaly.id))}
+                          onChange={() => handleSelectAllAnomalies(newAnomalies)}
+                          className="rounded"
+                        />
+                      </th>
+                      <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Waybill ID</th>
+                      <th className="w-44 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Type</th>
+                      <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Details</th>
+                      <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Car ID</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">CSN ID</th>
+                      <th className="w-48 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Fix</th>
+                      <th className="w-32 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Confidence</th>
+                      <th className="w-80 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Rationale</th>
+                      <th className="w-40 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">RPA Status</th>
+                      <th className="w-36 border border-gray-300 px-4 py-3 text-left text-sm font-semibold text-gray-700">Created</th>
+                      <th className="w-48 border border-gray-300 px-3 py-2 text-left text-sm font-semibold text-gray-700">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {newAnomalies.map((anomaly) => (
+                      <>
+                        <tr key={anomaly.id} className="hover:bg-blue-50 relative">
+                          <td className="border border-gray-300 px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedAnomalies.has(anomaly.id)}
+                              onChange={() => handleSelectAnomaly(anomaly.id)}
+                              className="rounded"
+                            />
+                          </td>
+                          <td className="w-32 border border-gray-300 px-4 py-3">
+                            <span className="font-medium text-sm text-gray-900">{anomaly.waybill_id}</span>
+                          </td>
+                          <td className="w-44 border border-gray-300 px-4 py-3">
+                            <Badge variant="destructive" className="text-xs">
+                              {anomaly.type}
                             </Badge>
-                            </div>
+                          </td>
+                          <td className="w-80 border border-gray-300 px-4 py-3">
+                            <span className="text-sm text-gray-600">
+                              {anomaly.details || 'No details available'}
+                            </span>
+                          </td>
+                          <td className="w-40 border border-gray-300 px-4 py-3">
+                            <span className="text-sm text-gray-700">{anomaly.car_id}</span>
+                          </td>
+                          <td className="w-48 border border-gray-300 px-4 py-3">
+                            <span className="text-sm font-mono text-gray-700">{anomaly.csn_id}</span>
+                          </td>
+                          <td className="w-48 border border-gray-300 px-4 py-3">
+                            <Badge variant="outline" className="text-xs">
+                              {formatSuggestedFix(anomaly.suggested_fix)}
+                            </Badge>
+                          </td>
+                          <td className="w-32 border border-gray-300 px-4 py-3">
                             <div className="flex items-center gap-2">
                               <div className="w-16 bg-gray-200 rounded-full h-1.5">
                                 <div 
@@ -1072,91 +1011,133 @@ export default function AnomaliesPage() {
                                 {(anomaly.confidence * 100).toFixed(0)}%
                               </span>
                             </div>
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <RPAStatus 
-                            anomaly={anomaly}
-                            onRetry={handleRpaRetry}
-                            onCancel={handleRpaCancel}
-                            onViewDetails={handleViewRpaDetails}
-                          />
-                        </TableCell>
-                        <TableCell>
-                          <span className="text-sm text-gray-600">
-                            {formatDate(anomaly.created_ts)}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-1 relative z-10">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => toggleActionMenu(anomaly.id)}
-                              className="h-8 w-8 p-0"
-                              data-anomaly-id={anomaly.id}
-                            >
-                              <MoreHorizontal className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                      {expandedRows.has(anomaly.id) && (
-                        <TableRow>
-                          <TableCell colSpan={6} className="bg-gray-50 p-4">
-                            <div className="space-y-3">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <h4 className="font-medium text-sm text-gray-900 mb-2">Anomaly Details</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <div><span className="font-medium">Type:</span> {anomaly.type}</div>
-                                    <div><span className="font-medium">Waybill ID:</span> {anomaly.waybill_id}</div>
-                                    <div><span className="font-medium">Car ID:</span> {anomaly.car_id}</div>
-                                    <div><span className="font-medium">CSN ID:</span> {anomaly.csn_id}</div>
-                                  </div>
-                                </div>
-                                <div>
-                                  <h4 className="font-medium text-sm text-gray-900 mb-2">Suggested Fix</h4>
-                                  <div className="space-y-1 text-sm">
-                                    <div><span className="font-medium">Actions:</span></div>
-                                    {getSuggestedFixDetails(anomaly.suggested_fix).actions.map((action, index) => (
-                                      <div key={index} className="ml-4 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
-                                        <div className="font-medium text-blue-800">{action.name}</div>
-                                        {action.args && action.args.length > 0 && (
-                                          <div className="text-xs text-gray-600 mt-1">
-                                            <span className="font-medium">Arguments:</span>
-                                            {action.args.map((arg, argIndex) => (
-                                              <span key={argIndex} className="ml-1">
-                                                {arg.key}: {arg.value}
-                                                {argIndex < action.args.length - 1 ? ', ' : ''}
-                                              </span>
-                                            ))}
-                                          </div>
-                                        )}
-                                        {action.rationale && (
-                                          <div className="text-xs text-gray-600 mt-1">
-                                            <span className="font-medium">Rationale:</span> {action.rationale}
-                                          </div>
-                                        )}
-                                      </div>
-                                    ))}
-                                    <div><span className="font-medium">Confidence:</span> {(anomaly.confidence * 100).toFixed(0)}%</div>
-                                    <div><span className="font-medium">Needs Confirmation:</span> {anomaly.needs_confirmation ? 'Yes' : 'No'}</div>
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="pt-2 border-t">
-                                <h4 className="font-medium text-sm text-gray-900 mb-2">Description</h4>
-                                <p className="text-sm text-gray-600">{anomaly.details || 'No additional details available'}</p>
-                              </div>
+                          </td>
+                          <td className="w-80 border border-gray-300 px-4 py-3">
+                            <span className="text-xs text-gray-500">
+                              {getRationaleOnly(anomaly.suggested_fix)}
+                            </span>
+                          </td>
+                          <td className="w-40 border border-gray-300 px-4 py-3">
+                            <RPAStatus 
+                              anomaly={anomaly}
+                              onRetry={handleRpaRetry}
+                              onCancel={handleRpaCancel}
+                              onViewDetails={handleViewRpaDetails}
+                            />
+                          </td>
+                          <td className="w-36 border border-gray-300 px-4 py-3">
+                            <span className="text-sm text-gray-600">
+                              {formatDate(anomaly.created_ts)}
+                            </span>
+                          </td>
+                          <td className="w-48 border border-gray-300 px-3 py-2">
+                            <div className="flex items-center gap-1 relative z-10">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleQuickAction(anomaly.id, 'accept')}
+                                className="h-8 w-8 p-0"
+                                title="Accept"
+                              >
+                                <CheckCircle className="h-4 w-4 text-green-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleQuickAction(anomaly.id, 'reject')}
+                                className="h-8 w-8 p-0"
+                                title="Reject"
+                              >
+                                <XCircle className="h-4 w-4 text-red-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleQuickAction(anomaly.id, 'modify')}
+                                className="h-8 w-8 p-0"
+                                title="Modify"
+                              >
+                                <Settings className="h-4 w-4 text-blue-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleQuickAction(anomaly.id, 'escalate')}
+                                className="h-8 w-8 p-0"
+                                title="Escalate"
+                              >
+                                <AlertTriangle className="h-4 w-4 text-orange-600" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => toggleActionMenu(anomaly.id)}
+                                className="h-8 w-8 p-0"
+                                data-anomaly-id={anomaly.id}
+                                title="More Actions"
+                              >
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
                             </div>
-                          </TableCell>
-                        </TableRow>
-                      )}
-                    </>
-                  ))}
-                </TableBody>
-              </Table>
+                          </td>
+                        </tr>
+                        {expandedRows.has(anomaly.id) && (
+                          <tr>
+                            <td colSpan={12} className="border border-gray-300 bg-gray-50 p-4">
+                              <div className="space-y-3">
+                                <div className="grid grid-cols-2 gap-4">
+                                  <div>
+                                    <h4 className="font-medium text-sm text-gray-900 mb-2">Anomaly Details</h4>
+                                    <div className="space-y-1 text-sm">
+                                      <div><span className="font-medium">Type:</span> {anomaly.type}</div>
+                                      <div><span className="font-medium">Waybill ID:</span> {anomaly.waybill_id}</div>
+                                      <div><span className="font-medium">Car ID:</span> {anomaly.car_id}</div>
+                                      <div><span className="font-medium">CSN ID:</span> {anomaly.csn_id}</div>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <h4 className="font-medium text-sm text-gray-900 mb-2">Suggested Fix</h4>
+                                    <div className="space-y-1 text-sm">
+                                      <div><span className="font-medium">Actions:</span></div>
+                                      {getSuggestedFixDetails(anomaly.suggested_fix).actions.map((action, index) => (
+                                        <div key={index} className="ml-4 p-2 bg-gray-50 rounded border-l-2 border-blue-200">
+                                          <div className="font-medium text-blue-800">{action.name}</div>
+                                          {action.args && action.args.length > 0 && (
+                                            <div className="text-xs text-gray-600 mt-1">
+                                              <span className="font-medium">Arguments:</span>
+                                              {action.args.map((arg, argIndex) => (
+                                                <span key={argIndex} className="ml-1">
+                                                  {arg.key}: {arg.value}
+                                                  {argIndex < action.args.length - 1 ? ', ' : ''}
+                                                </span>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {action.rationale && (
+                                            <div className="text-xs text-gray-600 mt-1">
+                                              <span className="font-medium">Rationale:</span> {action.rationale}
+                                            </div>
+                                          )}
+                                        </div>
+                                      ))}
+                                      <div><span className="font-medium">Confidence:</span> {(anomaly.confidence * 100).toFixed(0)}%</div>
+                                      <div><span className="font-medium">Needs Confirmation:</span> {anomaly.needs_confirmation ? 'Yes' : 'No'}</div>
+                                    </div>
+                                  </div>
+                                </div>
+                                <div className="pt-2 border-t">
+                                  <h4 className="font-medium text-sm text-gray-900 mb-2">Description</h4>
+                                  <p className="text-sm text-gray-600">{anomaly.details || 'No additional details available'}</p>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
               </div>
             </CardContent>
           </Card>
