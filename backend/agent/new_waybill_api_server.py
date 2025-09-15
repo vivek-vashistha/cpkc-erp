@@ -13,7 +13,7 @@ from langchain_core.messages import HumanMessage, AIMessage, ToolMessage, System
 # Your agent file must be on PYTHONPATH or in the same directory.
 try:
     # file name: agent_waybill_agentic_loggs.py
-    from agent_waybill_agentic_loggs import graph  # type: ignore
+    from agent_waybill_agentic_loggs_rag_enhanced import graph  # type: ignore
 except Exception as e:
     # Fail fast if the agent (or its env requirements) can't load
     raise RuntimeError(

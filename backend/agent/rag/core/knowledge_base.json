@@ -1,0 +1,397 @@
+{
+  "patterns": [
+    {
+      "title": "Missing Event Sequence Pattern",
+      "content": "Common pattern: Missing 'At Border' event for cross-border shipments. Resolution: Check customs docs, insert event with customs timestamp. Success rate: 91%",
+      "metadata": {
+        "success_rate": 0.91,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:49:35.827892",
+      "id": "patterns_1"
+    },
+    {
+      "title": "ID Inconsistency Pattern",
+      "content": "Pattern: Multiple CarId values across events. Resolution: Use CarId from 'Created' event. Success rate: 87%",
+      "metadata": {
+        "success_rate": 0.87,
+        "frequency": "medium"
+      },
+      "created_at": "2025-09-15T12:49:35.828177",
+      "id": "patterns_2"
+    },
+    {
+      "title": "Sequence Error Pattern",
+      "content": "Pattern: Events out of chronological order. Common causes: system delays, manual entry errors. Resolution: Reorder events based on timestamps. Success rate: 89%",
+      "metadata": {
+        "success_rate": 0.89,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:49:35.828313",
+      "id": "patterns_3"
+    },
+    {
+      "title": "Terminal Conflict Pattern",
+      "content": "Pattern: Both 'Delivered' and 'Cancelled' events present. Resolution: Review terminal state, determine correct final status. Success rate: 85%",
+      "metadata": {
+        "success_rate": 0.85,
+        "frequency": "low"
+      },
+      "created_at": "2025-09-15T12:49:35.828429",
+      "id": "patterns_4"
+    },
+    {
+      "title": "Missing Event Sequence Pattern",
+      "content": "Common pattern: Missing 'At Border' event for cross-border shipments. Resolution: Check customs docs, insert event with customs timestamp. Success rate: 91%",
+      "metadata": {
+        "success_rate": 0.91,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:49:56.480879",
+      "id": "patterns_5"
+    },
+    {
+      "title": "ID Inconsistency Pattern",
+      "content": "Pattern: Multiple CarId values across events. Resolution: Use CarId from 'Created' event. Success rate: 87%",
+      "metadata": {
+        "success_rate": 0.87,
+        "frequency": "medium"
+      },
+      "created_at": "2025-09-15T12:49:56.481437",
+      "id": "patterns_6"
+    },
+    {
+      "title": "Sequence Error Pattern",
+      "content": "Pattern: Events out of chronological order. Common causes: system delays, manual entry errors. Resolution: Reorder events based on timestamps. Success rate: 89%",
+      "metadata": {
+        "success_rate": 0.89,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:49:56.481811",
+      "id": "patterns_7"
+    },
+    {
+      "title": "Terminal Conflict Pattern",
+      "content": "Pattern: Both 'Delivered' and 'Cancelled' events present. Resolution: Review terminal state, determine correct final status. Success rate: 85%",
+      "metadata": {
+        "success_rate": 0.85,
+        "frequency": "low"
+      },
+      "created_at": "2025-09-15T12:49:56.482182",
+      "id": "patterns_8"
+    },
+    {
+      "title": "New Pattern: Duplicate Events",
+      "content": "Pattern: Multiple events of same type with identical timestamps. Resolution: Merge duplicate events, keep most complete record. Success rate: 92%",
+      "metadata": {
+        "success_rate": 0.92,
+        "frequency": "medium"
+      },
+      "created_at": "2025-09-15T12:49:56.558417",
+      "id": "patterns_9"
+    },
+    {
+      "title": "Missing Event Sequence Pattern",
+      "content": "Common pattern: Missing 'At Border' event for cross-border shipments. Resolution: Check customs docs, insert event with customs timestamp. Success rate: 91%",
+      "metadata": {
+        "success_rate": 0.91,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:50:57.248251",
+      "id": "patterns_10"
+    },
+    {
+      "title": "ID Inconsistency Pattern",
+      "content": "Pattern: Multiple CarId values across events. Resolution: Use CarId from 'Created' event. Success rate: 87%",
+      "metadata": {
+        "success_rate": 0.87,
+        "frequency": "medium"
+      },
+      "created_at": "2025-09-15T12:50:57.249094",
+      "id": "patterns_11"
+    },
+    {
+      "title": "Sequence Error Pattern",
+      "content": "Pattern: Events out of chronological order. Common causes: system delays, manual entry errors. Resolution: Reorder events based on timestamps. Success rate: 89%",
+      "metadata": {
+        "success_rate": 0.89,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:50:57.249456",
+      "id": "patterns_12"
+    },
+    {
+      "title": "Terminal Conflict Pattern",
+      "content": "Pattern: Both 'Delivered' and 'Cancelled' events present. Resolution: Review terminal state, determine correct final status. Success rate: 85%",
+      "metadata": {
+        "success_rate": 0.85,
+        "frequency": "low"
+      },
+      "created_at": "2025-09-15T12:50:57.249792",
+      "id": "patterns_13"
+    },
+    {
+      "title": "Missing Event Sequence Pattern",
+      "content": "Common pattern: Missing 'At Border' event for cross-border shipments. Resolution: Check customs docs, insert event with customs timestamp. Success rate: 91%",
+      "metadata": {
+        "success_rate": 0.91,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:50:57.252987",
+      "id": "patterns_14"
+    },
+    {
+      "title": "ID Inconsistency Pattern",
+      "content": "Pattern: Multiple CarId values across events. Resolution: Use CarId from 'Created' event. Success rate: 87%",
+      "metadata": {
+        "success_rate": 0.87,
+        "frequency": "medium"
+      },
+      "created_at": "2025-09-15T12:50:57.253532",
+      "id": "patterns_15"
+    },
+    {
+      "title": "Sequence Error Pattern",
+      "content": "Pattern: Events out of chronological order. Common causes: system delays, manual entry errors. Resolution: Reorder events based on timestamps. Success rate: 89%",
+      "metadata": {
+        "success_rate": 0.89,
+        "frequency": "high"
+      },
+      "created_at": "2025-09-15T12:50:57.254011",
+      "id": "patterns_16"
+    },
+    {
+      "title": "Terminal Conflict Pattern",
+      "content": "Pattern: Both 'Delivered' and 'Cancelled' events present. Resolution: Review terminal state, determine correct final status. Success rate: 85%",
+      "metadata": {
+        "success_rate": 0.85,
+        "frequency": "low"
+      },
+      "created_at": "2025-09-15T12:50:57.254425",
+      "id": "patterns_17"
+    },
+    {
+      "title": "Weather Delay Pattern",
+      "content": "Pattern: Events delayed due to weather conditions. Common in winter months. Resolution: Adjust timestamps based on weather reports. Success rate: 88%",
+      "metadata": {
+        "success_rate": 0.88,
+        "frequency": "seasonal",
+        "season": "winter"
+      },
+      "created_at": "2025-09-15T12:50:57.258057",
+      "id": "patterns_18"
+    }
+  ],
+  "rules": [
+    {
+      "title": "CPKC Event Sequence Standard",
+      "content": "Required sequence: Created \u2192 Picked Up \u2192 In Transit \u2192 At Border \u2192 Arrived \u2192 Delivered \u2192 Closed. Exceptions: Terminal shipments may skip 'Picked Up', cross-border MUST have 'At Border'",
+      "metadata": {
+        "version": "2.1",
+        "effective_date": "2025-01-01"
+      },
+      "created_at": "2025-09-15T12:49:35.828551",
+      "id": "rules_1"
+    },
+    {
+      "title": "Equipment ID Consistency Rules",
+      "content": "CarId: Must be unique per shipment, format CPKC-XXXX. CSNId: Must be consistent across all events, format CSN-CPKC-XXXX-YYYY-MM-A. If multiple values detected, flag as anomaly requiring manual review",
+      "metadata": {
+        "version": "1.8",
+        "effective_date": "2024-12-01"
+      },
+      "created_at": "2025-09-15T12:49:35.828675",
+      "id": "rules_2"
+    },
+    {
+      "title": "Cross-Border Shipment Rules",
+      "content": "All cross-border shipments MUST have 'At Border' event. Missing 'At Border' indicates data quality issue or customs processing delay. Check customs documentation for border crossing timestamps",
+      "metadata": {
+        "version": "1.5",
+        "effective_date": "2024-11-01"
+      },
+      "created_at": "2025-09-15T12:49:35.828800",
+      "id": "rules_3"
+    },
+    {
+      "title": "CPKC Event Sequence Standard",
+      "content": "Required sequence: Created \u2192 Picked Up \u2192 In Transit \u2192 At Border \u2192 Arrived \u2192 Delivered \u2192 Closed. Exceptions: Terminal shipments may skip 'Picked Up', cross-border MUST have 'At Border'",
+      "metadata": {
+        "version": "2.1",
+        "effective_date": "2025-01-01"
+      },
+      "created_at": "2025-09-15T12:49:56.482540",
+      "id": "rules_4"
+    },
+    {
+      "title": "Equipment ID Consistency Rules",
+      "content": "CarId: Must be unique per shipment, format CPKC-XXXX. CSNId: Must be consistent across all events, format CSN-CPKC-XXXX-YYYY-MM-A. If multiple values detected, flag as anomaly requiring manual review",
+      "metadata": {
+        "version": "1.8",
+        "effective_date": "2024-12-01"
+      },
+      "created_at": "2025-09-15T12:49:56.482914",
+      "id": "rules_5"
+    },
+    {
+      "title": "Cross-Border Shipment Rules",
+      "content": "All cross-border shipments MUST have 'At Border' event. Missing 'At Border' indicates data quality issue or customs processing delay. Check customs documentation for border crossing timestamps",
+      "metadata": {
+        "version": "1.5",
+        "effective_date": "2024-11-01"
+      },
+      "created_at": "2025-09-15T12:49:56.483407",
+      "id": "rules_6"
+    },
+    {
+      "title": "CPKC Event Sequence Standard",
+      "content": "Required sequence: Created \u2192 Picked Up \u2192 In Transit \u2192 At Border \u2192 Arrived \u2192 Delivered \u2192 Closed. Exceptions: Terminal shipments may skip 'Picked Up', cross-border MUST have 'At Border'",
+      "metadata": {
+        "version": "2.1",
+        "effective_date": "2025-01-01"
+      },
+      "created_at": "2025-09-15T12:50:57.250142",
+      "id": "rules_7"
+    },
+    {
+      "title": "Equipment ID Consistency Rules",
+      "content": "CarId: Must be unique per shipment, format CPKC-XXXX. CSNId: Must be consistent across all events, format CSN-CPKC-XXXX-YYYY-MM-A. If multiple values detected, flag as anomaly requiring manual review",
+      "metadata": {
+        "version": "1.8",
+        "effective_date": "2024-12-01"
+      },
+      "created_at": "2025-09-15T12:50:57.250493",
+      "id": "rules_8"
+    },
+    {
+      "title": "Cross-Border Shipment Rules",
+      "content": "All cross-border shipments MUST have 'At Border' event. Missing 'At Border' indicates data quality issue or customs processing delay. Check customs documentation for border crossing timestamps",
+      "metadata": {
+        "version": "1.5",
+        "effective_date": "2024-11-01"
+      },
+      "created_at": "2025-09-15T12:50:57.250845",
+      "id": "rules_9"
+    },
+    {
+      "title": "CPKC Event Sequence Standard",
+      "content": "Required sequence: Created \u2192 Picked Up \u2192 In Transit \u2192 At Border \u2192 Arrived \u2192 Delivered \u2192 Closed. Exceptions: Terminal shipments may skip 'Picked Up', cross-border MUST have 'At Border'",
+      "metadata": {
+        "version": "2.1",
+        "effective_date": "2025-01-01"
+      },
+      "created_at": "2025-09-15T12:50:57.254839",
+      "id": "rules_10"
+    },
+    {
+      "title": "Equipment ID Consistency Rules",
+      "content": "CarId: Must be unique per shipment, format CPKC-XXXX. CSNId: Must be consistent across all events, format CSN-CPKC-XXXX-YYYY-MM-A. If multiple values detected, flag as anomaly requiring manual review",
+      "metadata": {
+        "version": "1.8",
+        "effective_date": "2024-12-01"
+      },
+      "created_at": "2025-09-15T12:50:57.255250",
+      "id": "rules_11"
+    },
+    {
+      "title": "Cross-Border Shipment Rules",
+      "content": "All cross-border shipments MUST have 'At Border' event. Missing 'At Border' indicates data quality issue or customs processing delay. Check customs documentation for border crossing timestamps",
+      "metadata": {
+        "version": "1.5",
+        "effective_date": "2024-11-01"
+      },
+      "created_at": "2025-09-15T12:50:57.255667",
+      "id": "rules_12"
+    }
+  ],
+  "cases": [
+    {
+      "title": "WB3005 Resolution Case",
+      "content": "Anomaly: Missing 'Arrived' and 'Delivered' events. Resolution: Added events based on terminal records. Outcome: Successfully resolved, customer confirmed delivery. Resolution time: 12 minutes",
+      "metadata": {
+        "waybill_id": "WB3005",
+        "outcome": "success",
+        "resolution_time": 12
+      },
+      "created_at": "2025-09-15T12:49:35.829023",
+      "id": "cases_1"
+    },
+    {
+      "title": "WB4001 CarId Inconsistency",
+      "content": "Anomaly: Multiple CarId values (CPKC-1001, CPKC-2001). Resolution: Used CarId from 'Created' event (CPKC-1001). Outcome: Successfully standardized, no customer impact. Resolution time: 8 minutes",
+      "metadata": {
+        "waybill_id": "WB4001",
+        "outcome": "success",
+        "resolution_time": 8
+      },
+      "created_at": "2025-09-15T12:49:35.829409",
+      "id": "cases_2"
+    },
+    {
+      "title": "WB3005 Resolution Case",
+      "content": "Anomaly: Missing 'Arrived' and 'Delivered' events. Resolution: Added events based on terminal records. Outcome: Successfully resolved, customer confirmed delivery. Resolution time: 12 minutes",
+      "metadata": {
+        "waybill_id": "WB3005",
+        "outcome": "success",
+        "resolution_time": 12
+      },
+      "created_at": "2025-09-15T12:49:56.483766",
+      "id": "cases_3"
+    },
+    {
+      "title": "WB4001 CarId Inconsistency",
+      "content": "Anomaly: Multiple CarId values (CPKC-1001, CPKC-2001). Resolution: Used CarId from 'Created' event (CPKC-1001). Outcome: Successfully standardized, no customer impact. Resolution time: 8 minutes",
+      "metadata": {
+        "waybill_id": "WB4001",
+        "outcome": "success",
+        "resolution_time": 8
+      },
+      "created_at": "2025-09-15T12:49:56.484148",
+      "id": "cases_4"
+    },
+    {
+      "title": "WB3005 Resolution Case",
+      "content": "Anomaly: Missing 'Arrived' and 'Delivered' events. Resolution: Added events based on terminal records. Outcome: Successfully resolved, customer confirmed delivery. Resolution time: 12 minutes",
+      "metadata": {
+        "waybill_id": "WB3005",
+        "outcome": "success",
+        "resolution_time": 12
+      },
+      "created_at": "2025-09-15T12:50:57.251198",
+      "id": "cases_5"
+    },
+    {
+      "title": "WB4001 CarId Inconsistency",
+      "content": "Anomaly: Multiple CarId values (CPKC-1001, CPKC-2001). Resolution: Used CarId from 'Created' event (CPKC-1001). Outcome: Successfully standardized, no customer impact. Resolution time: 8 minutes",
+      "metadata": {
+        "waybill_id": "WB4001",
+        "outcome": "success",
+        "resolution_time": 8
+      },
+      "created_at": "2025-09-15T12:50:57.251571",
+      "id": "cases_6"
+    },
+    {
+      "title": "WB3005 Resolution Case",
+      "content": "Anomaly: Missing 'Arrived' and 'Delivered' events. Resolution: Added events based on terminal records. Outcome: Successfully resolved, customer confirmed delivery. Resolution time: 12 minutes",
+      "metadata": {
+        "waybill_id": "WB3005",
+        "outcome": "success",
+        "resolution_time": 12
+      },
+      "created_at": "2025-09-15T12:50:57.256321",
+      "id": "cases_7"
+    },
+    {
+      "title": "WB4001 CarId Inconsistency",
+      "content": "Anomaly: Multiple CarId values (CPKC-1001, CPKC-2001). Resolution: Used CarId from 'Created' event (CPKC-1001). Outcome: Successfully standardized, no customer impact. Resolution time: 8 minutes",
+      "metadata": {
+        "waybill_id": "WB4001",
+        "outcome": "success",
+        "resolution_time": 8
+      },
+      "created_at": "2025-09-15T12:50:57.256828",
+      "id": "cases_8"
+    }
+  ]
+}

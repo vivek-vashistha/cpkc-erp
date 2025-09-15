@@ -1,7 +1,7 @@
 {
     "dependencies": ["./backend/agent"],
     "graphs": {
-      "agent": "./agent_waybill_agentic_loggs.py:graph"
+      "agent": "./agent_waybill_agentic_vector_rag.py:graph"
     },
     "env": ".env"
   }
