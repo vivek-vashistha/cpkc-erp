@@ -1,6 +1,6 @@
 [
   {
-    "id": "anomaly_1757683666935_4c2y5npvm",
+    "id": "anomaly_1757922443216_70fc5c75",
     "waybill_id": "WB4004",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
@@ -17,13 +17,13 @@
     },
     "status": "NEW",
     "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-15T07:52:45.125Z",
     "details": "Waybill WB4004 has both 'Delivered' and 'Cancelled' events, which are mutually exclusive terminal events.",
     "needs_confirmation": true,
     "rpa_status": "Manual Review Required"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvn",
+    "id": "anomaly_1757922443216_498ee743",
     "waybill_id": "WB4005",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
@@ -40,13 +40,13 @@
     },
     "status": "NEW",
     "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-15T07:52:49.460Z",
     "details": "Waybill WB4005 has multiple 'Delivered' events.",
     "needs_confirmation": true,
     "rpa_status": "Auto Fix"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvo",
+    "id": "anomaly_1757922443216_22dbbde6",
     "waybill_id": "WB4006",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
@@ -61,15 +61,15 @@
         }
       ]
     },
-    "status": "NEW",
+    "status": "RESOLVED",
     "created_ts": "2025-09-12T13:27:46.935Z",
-    "updated_ts": "2025-09-12T13:27:46.935Z",
+    "updated_ts": "2025-09-15T07:52:58.198Z",
     "details": "Waybill WB4006 has 'In Transit' event after 'Closed'.",
     "needs_confirmation": true,
     "rpa_status": "Manual Review Required"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvp",
+    "id": "anomaly_1757922443216_39184097",
     "waybill_id": "WB4007",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
@@ -97,7 +97,7 @@
     "rpa_status": "Manual Review Required"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvm",
+    "id": "anomaly_1757922443216_f415990c",
     "waybill_id": "WB4001",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
@@ -120,7 +120,7 @@
     "rpa_status": "Auto Fix"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvn",
+    "id": "anomaly_1757922443216_531fa561",
     "waybill_id": "WB4003",
     "car_id": "CPKC-2001",
     "csn_id": "CSN-CPKC-2001-202509-A",
@@ -148,7 +148,7 @@
     "rpa_status": "Auto Fix"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvm",
+    "id": "anomaly_1757922443216_3f26637a",
     "waybill_id": "WB3000",
     "car_id": "CPKC-1001",
     "csn_id": "CSN-CPKC-1001-202509-A",
@@ -176,7 +176,7 @@
     "rpa_status": "Auto Fix"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvn",
+    "id": "anomaly_1757922443216_1652cb38",
     "waybill_id": "WB3005",
     "car_id": "CPKC-1001",
     "csn_id": "CSN-CPKC-1001-202509-A",
@@ -199,7 +199,7 @@
     "rpa_status": "Auto Fix"
   },
   {
-    "id": "anomaly_1757683666935_4c2y5npvo",
+    "id": "anomaly_1757922443216_25b2e6bd",
     "waybill_id": "WB3019",
     "car_id": "CPKC-1001",
     "csn_id": "CSN-CPKC-1001-202509-A",

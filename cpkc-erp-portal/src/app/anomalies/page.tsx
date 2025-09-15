@@ -198,12 +198,15 @@ export default function AnomaliesPage() {
     try {
       // Update in file first
       const success = await apiService.updateAnomalyInFile(id, { status });
+      
       if (success) {
-        // Update local state
-        const updatedAnomalies = anomalies.map(anomaly => 
-          anomaly.id === id ? { ...anomaly, status } : anomaly
-        );
-        setAnomalies(updatedAnomalies);
+        // Update local state with a more robust approach
+        setAnomalies(prevAnomalies => {
+          const updatedAnomalies = prevAnomalies.map(anomaly => 
+            anomaly.id === id ? { ...anomaly, status, updated_ts: new Date().toISOString() } : anomaly
+          );
+          return updatedAnomalies;
+        });
       }
     } catch (error) {
       console.error('Failed to update anomaly status:', error);
@@ -458,7 +461,6 @@ export default function AnomaliesPage() {
   };
 
   const handleQuickAction = (anomalyId: string, action: string) => {
-    console.log('Quick action triggered:', action, 'for anomaly:', anomalyId);
     const anomaly = anomalies.find(a => a.id === anomalyId);
     if (!anomaly) {
       console.error('Anomaly not found:', anomalyId);
@@ -485,7 +487,6 @@ export default function AnomaliesPage() {
         handleChatWithAnomaly(anomaly);
         break;
       case 'delete':
-        console.log('Delete action triggered for anomaly:', anomalyId);
         handleDeleteAnomaly(anomalyId);
         // Don't close menu here - let delete function handle it
         return;
@@ -1035,7 +1036,11 @@ export default function AnomaliesPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleQuickAction(anomaly.id, 'accept')}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleQuickAction(anomaly.id, 'accept');
+                                }}
                                 className="h-8 w-8 p-0"
                                 title="Accept"
                               >
@@ -1044,7 +1049,11 @@ export default function AnomaliesPage() {
                               <Button
                                 variant="ghost"
                                 size="sm"
-                                onClick={() => handleQuickAction(anomaly.id, 'reject')}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  handleQuickAction(anomaly.id, 'reject');
+                                }}
                                 className="h-8 w-8 p-0"
                                 title="Reject"
                               >
@@ -1249,7 +1258,11 @@ export default function AnomaliesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleQuickAction(anomaly.id, 'accept')}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleQuickAction(anomaly.id, 'accept');
+                              }}
                               className="h-8 w-8 p-0"
                               title="Accept"
                             >
@@ -1258,7 +1271,11 @@ export default function AnomaliesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleQuickAction(anomaly.id, 'reject')}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleQuickAction(anomaly.id, 'reject');
+                              }}
                               className="h-8 w-8 p-0"
                               title="Reject"
                             >
@@ -1410,7 +1427,11 @@ export default function AnomaliesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleQuickAction(anomaly.id, 'accept')}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleQuickAction(anomaly.id, 'accept');
+                              }}
                               className="h-8 w-8 p-0"
                               title="Accept"
                             >
@@ -1419,7 +1440,11 @@ export default function AnomaliesPage() {
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={() => handleQuickAction(anomaly.id, 'reject')}
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                handleQuickAction(anomaly.id, 'reject');
+                              }}
                               className="h-8 w-8 p-0"
                               title="Reject"
                             >
